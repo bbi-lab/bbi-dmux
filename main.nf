@@ -137,7 +137,7 @@ process seg_sample_fastqs {
         file "demux_out/*.csv" into csv_stats
 
     """
-    mkdir demux_stats
+    mkdir demux_out
     make_sample_fastqs.py --run_directory $params.run_dir \
         --read1 <(zcat $R1) --read2 <(zcat $R2) \
         --file_name $R1 --sample_layout $sample_sheet_file \

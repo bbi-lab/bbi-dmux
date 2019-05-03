@@ -122,28 +122,27 @@ process seg_sample_fastqs {
     cache 'lenient'
     module 'java/latest:modules:modules-init:modules-gs:python/3.6.4'
     clusterOptions "-l mfree=1G"
-    publishDir = [path: "${params.output_dir}/", pattern: "demux_stats/*.stats.json", mode: 'copy']
-    publishDir = [path: "${params.output_dir}/sample_fastqs", pattern: "demux_stats/*.fastq", mode: 'copy']
-    publishDir = [path: "${params.output_dir}/", pattern: "demux_stats/*.csv", mode: 'copy'] 
+    publishDir = [path: "${params.output_dir}/", pattern: "demux_out/*.stats.json", mode: 'copy']
+    publishDir = [path: "${params.output_dir}/", pattern: "demux_out/*.fastq", mode: 'copy']
+    publishDir = [path: "${params.output_dir}/", pattern: "demux_out/*.csv", mode: 'copy'] 
 
     input:
         set file(R1), file(R2) from fastqs
         file sample_sheet_file
 
     output:
-        file "demux_stats/*" into seg_output
-        file "demux_stats/*.fastq" into samp_fastqs_check mode flatten
-        file "demux_stats/*.stats.json" into stats
-        file "demux_stats/*.csv" into csv_stats
+        file "demux_out/*" into seg_output
+        file "demux_out/*.fastq" into samp_fastqs_check mode flatten
+        file "demux_out/*.stats.json" into stats
+        file "demux_out/*.csv" into csv_stats
 
     """
     mkdir demux_stats
-    mkdir sample_fastqs
     make_sample_fastqs.py --run_directory $params.run_dir \
         --read1 <(zcat $R1) --read2 <(zcat $R2) \
         --file_name $R1 --sample_layout $sample_sheet_file \
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
-        --output_dir ./demux_stats
+        --output_dir ./demux_out
 
     """    
 }
@@ -158,7 +157,7 @@ process demux_dash {
 
     input:
         file demux_stats_files from seg_output.collect()
-        file icon from Channel.fromPath('./bin/bbi_icon.png')
+        file icon from Channel.fromPath('$baseDir/bin/bbi_icon.png')
     output:
         file demux_dash
 

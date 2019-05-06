@@ -157,14 +157,13 @@ process demux_dash {
 
     input:
         file demux_stats_files from seg_output.collect()
-        file icon from Channel.fromPath('baseDir/bin/bbi_icon.png')
     output:
         file demux_dash
 
     """
     mkdir demux_dash
     mkdir demux_dash/img
-    cp $icon demux_dash/img/
+    cp $baseDir/bin/bbi_icon.png demux_dash/img/
     generate_html.R \
         "." --p7_rows "$params.p7_rows" --p5_cols "$params.p5_cols"
 

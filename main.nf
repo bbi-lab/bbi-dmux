@@ -157,7 +157,7 @@ process demux_dash {
 
     input:
         file demux_stats_files from seg_output.collect()
-        file icon from Channel.fromPath('$baseDir/bin/bbi_icon.png')
+        file icon from Channel.fromPath('baseDir/bin/bbi_icon.png')
     output:
         file demux_dash
 

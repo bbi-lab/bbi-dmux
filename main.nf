@@ -97,7 +97,7 @@ process bcl2fastq {
     output:
         file "lane_fastqs" into bcl2fastq_output
         set file("lane_fastqs/Undetermined_S0_*_R1_001.fastq.gz"), file("lane_fastqs/Undetermined_S0_*_R2_001.fastq.gz") into fastqs mode flatten
-        file "lane_fastqs/fake*.gz" into fakes mode flatten
+        file "lane_fastqs/fake*.gz" optional true into fakes mode flatten
 
     """
     min_threads=\$((($max_cores_bcl/2)<4 ? ($max_cores_bcl/2):4))

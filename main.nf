@@ -55,7 +55,7 @@ process check_sample_sheet {
         file "*.csv" into good_sample_sheet
 
     """
-    check_sample_sheet.py --sample_sheet $params.sample_sheet --genomes $params.star_file
+    check_sample_sheet.py --sample_sheet $params.sample_sheet --star_file $params.star_file
     """
 }
 

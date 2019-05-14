@@ -2,7 +2,7 @@
 // Parse input parameters
 params.help = false
 params.rerun = false
-params.star_file = file("$baseDir/bin/star_file.txt")
+params.star_file = "$baseDir/bin/star_file.txt"
  
 //print usage
 if (params.help) {
@@ -43,19 +43,21 @@ if (!params.run_dir || !params.output_dir || !params.sample_sheet || !params.p7_
     exit 1, "Must include config file using -c CONFIG_FILE.config that includes output_dir, sample_sheet, run_dir, p7_rows and p5_cols"
 }
 
+star_file = file(params.star_file)
+
 //check sample sheet
 process check_sample_sheet {
     module 'modules:java/latest:modules-init:modules-gs:python/3.6.4'
 
     input:
-	file params.sample_sheet
-        val params.star_file
+	val params.sample_sheet
+        file star_file
 
     output:
         file "*.csv" into good_sample_sheet
 
     """
-    check_sample_sheet.py --sample_sheet $params.sample_sheet --star_file $params.star_file
+    check_sample_sheet.py --sample_sheet $params.sample_sheet --star_file $star_file
     """
 }
 

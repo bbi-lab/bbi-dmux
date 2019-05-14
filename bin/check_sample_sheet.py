@@ -19,8 +19,13 @@ if __name__ == '__main__':
             line = line[1].strip().split("\t")
             rtdict[line[0]] = line[1]
 
-    genomes = ['Human', 'Mouse', 'Barnyard', 'Barn', 'Celegans', 'Rat', 'Macaque', 'Zebrafish', 'Drosophila']
+    genomes = []
 
+    with open(args.star_file, 'r') as f:
+        for line in f:
+            items = line.split()
+            genomes.append(items)
+           
     def check_line(line, line_num, rtdict = rtdict, genomes = genomes):
         error_flag = 0
         line = line.strip().split(",")

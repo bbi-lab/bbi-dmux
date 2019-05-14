@@ -2,7 +2,8 @@
 // Parse input parameters
 params.help = false
 params.rerun = false
-
+params.star_file = $baseDir/bin/star_file.txt
+ 
 //print usage
 if (params.help) {
     log.info ''
@@ -31,6 +32,7 @@ if (params.help) {
     log.info '    process.maxForks = 20                      The maximum number of processes to run at the same time on the cluster.'
     log.info '    process.queue = "trapnell-short.q"         The queue on the cluster where the jobs should be submitted. '
     log.info '    params.rerun = [sample1, sample2]          Add to only rerun certain samples from trimming on.'
+    log.info '    params.star_file = PATH/TO/FILE            File with the genome to star maps, similar to the one included with the package.'
     log.info ''
     log.info 'Issues? Contact hpliner@uw.edu'
     exit 1
@@ -48,12 +50,13 @@ process check_sample_sheet {
 
     input:
 	val params.sample_sheet
+        val params.star_file
 
     output:
         file "*.csv" into good_sample_sheet
 
     """
-    check_sample_sheet.py --sample_sheet $params.sample_sheet
+    check_sample_sheet.py --sample_sheet $params.sample_sheet --genomes $params.star_file
     """
 }
 

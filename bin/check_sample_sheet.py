@@ -11,6 +11,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser('Check sample sheet')
 
     parser.add_argument('--sample_sheet', required=True, help='Path to sample sheet.')
+    parser.add_argument('--genomes', required=True, help='Path to star genomes file.')
     args = parser.parse_args()
 
     rtdict = {}

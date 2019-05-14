@@ -24,7 +24,7 @@ if __name__ == '__main__':
 
     with open(args.star_file, 'r') as f:
         for line in f:
-            items = line.strip().split("\t")
+            items = line.strip().split()
             genomes.append(items[0])
            
     def check_line(line, line_num, rtdict = rtdict, genomes = genomes):

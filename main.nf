@@ -48,7 +48,7 @@ process check_sample_sheet {
     module 'modules:java/latest:modules-init:modules-gs:python/3.6.4'
 
     input:
-	val params.sample_sheet
+	file params.sample_sheet
         val params.star_file
 
     output:

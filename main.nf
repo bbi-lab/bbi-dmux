@@ -2,7 +2,7 @@
 // Parse input parameters
 params.help = false
 params.rerun = false
-params.star_file = $baseDir/bin/star_file.txt
+params.star_file = "$baseDir/bin/star_file.txt"
  
 //print usage
 if (params.help) {

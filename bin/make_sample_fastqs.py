@@ -66,10 +66,8 @@ def load_sample_layout(file_path):
 
     lookup = {}
     for rt_well in quick_parse(file_path):
-        lookup[rt_well['RT Barcode']] = rt_well['Sample ID'].replace(' ', '.').replace('-', '.').replace('_', '.').replace('/', '.')
-    return lookup 
-
-
+        lookup[rt_well['RT Barcode']] = rt_well['Sample ID'].replace('(', '.').replace(')', '.').replace(' ', '.').replace('-', '.').replace('_', '.').replace('/', '.')
+    return lookup
 
 
 if __name__ == '__main__':

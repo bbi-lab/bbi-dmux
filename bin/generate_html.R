@@ -12,6 +12,7 @@ parser = argparse::ArgumentParser(description='Script to generate demux dashboar
 parser$add_argument('input_folder', help='input folder.')
 parser$add_argument('--p7_rows', required=TRUE, help='p7 rows')
 parser$add_argument('--p5_cols', required=TRUE, help='p5 cols')
+parser$add_argument('--level', required=TRUE, help='2 or 3 level')
 args = parser$parse_args()
 
 
@@ -49,7 +50,33 @@ for (lane in lane_list) {
             scale_fill_gradient(low = "white", high = "blue"))
     dev.off()
   }
-
+if(args$level == "3") {
+  rows <- c("A", "B", "C", "D", "E", "F", "G", "H")
+  cols <- 1:12
+  plate <- data.frame(expand.grid(cols, rows))
+  levels(plate$Var2) <- rev(levels(plate$Var2))
+  
+  lig_counts <- read.csv(paste0(lane, ".lig_counts.csv"), header = F, stringsAsFactors = FALSE)
+  lig_counts$plate <- stringr::str_split_fixed(lig_counts$V1, "-", 2)[,1]
+  lig_counts$well <- stringr::str_split_fixed(lig_counts$V1, "-", 2)[,2] 
+  for(p in unique(lig_counts$plate)) {
+    sub_df <- lig_counts[lig_counts$plate == p,]
+    lig_df <- data.frame(rows = substring(sub_df$well, first = 1, last = 1),
+                        cols = as.numeric(substring(sub_df$well, first = 2,
+                                                    last = nchar(sub_df$well))), ReadCount = sub_df$V2)
+    
+    
+    data <- merge(plate, lig_df, by.x=c("Var1", "Var2"),
+                  by.y=c("cols", "rows"), all.x=T)
+    data$ReadCount[is.na(data$ReadCount)] <- 0
+    
+    png(file = paste0("demux_dash/img/", lane, "_", p, ".lig_plate.png"), width = 6, height = 4, res = 200, units = "in")
+    print(ggplot(aes(as.factor(Var1), Var2, fill = ReadCount), data = data) +
+            geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
+            scale_fill_gradient(low = "white", high = "blue"))
+    dev.off()
+  }
+}
   pcr_counts <- read.csv(paste0(lane, ".pcr_counts.csv"), header = F, stringsAsFactors = FALSE)
   pcr_counts$p5_row <- substring(pcr_counts$V1, first = 1, last = 1)
   pcr_counts$p5_col <- as.numeric(substring(pcr_counts$V1, first = 2,

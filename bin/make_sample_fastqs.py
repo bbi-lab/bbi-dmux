@@ -15,7 +15,7 @@ P5_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/p5.txt')
 P7_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/p7.txt')
 RT_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/rt2.txt')
 LIG_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/ligation.txt')
-
+RT3_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/rt.txt')
 
 def get_programmed_pcr_combos(p5_lookup, p7_lookup, p5_cols_used, p7_rows_used):
     """
@@ -86,6 +86,10 @@ if __name__ == '__main__':
     parser.add_argument('--level', required=True, help = "2 or 3 level sci?")
     args = parser.parse_args()
 
+    if args.level == "3":
+        rtfile = RT3_FILE
+    else:
+        rtfile = RT_FILE
     lane_num = args.file_name
     lane_num = lane_num.replace("Undetermined_S0_L", "L")
     lane_num = lane_num.replace("_R1_001.fastq.gz", "")
@@ -155,13 +159,13 @@ if __name__ == '__main__':
                 'start': 24,
                 'end': 33,
                 'read': 'r1',
-                'whitelist': args.rt_barcodes
+                'whitelist': rtfile
             },
             'rt_10': {
                 'start': 25,
                 'end': 34,
                 'read': 'r1',
-                'whitelist': args.rt_barcodes
+                'whitelist': rtfile
             }  
         }
     else:
@@ -187,7 +191,7 @@ if __name__ == '__main__':
                 'start': 9,
                 'end': 18,
                 'read': 'r1',
-                'whitelist': RT_FILE
+                'whitelist': rtfile
             }  
         }
 

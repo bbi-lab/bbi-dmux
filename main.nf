@@ -3,7 +3,8 @@
 params.help = false
 params.rerun = false
 params.star_file = "$baseDir/bin/star_file.txt"
- 
+params.level = 3
+
 //print usage
 if (params.help) {
     log.info ''
@@ -25,6 +26,7 @@ if (params.help) {
     log.info '    params.sample_sheet = SAMPLE_SHEET_PATH    Sample sheet of the format described in the README.'
     log.info '    params.p7_rows = "A B C"                   The PCR rows used - must match order of params.p5_cols.'
     log.info '    params.p5_cols = "1 2 3"                   The PCR columns used - must match order of params.p7_rows.'
+    log.info '    params.level = 3                           Level of run - either 2 or 3.'
     log.info ''
     log.info ''
     log.info 'Optional parameters (specify in your config file):'
@@ -57,7 +59,7 @@ process check_sample_sheet {
         file "*.csv" into good_sample_sheet
 
     """
-    check_sample_sheet.py --sample_sheet $params.sample_sheet --star_file $star_file
+    check_sample_sheet.py --sample_sheet $params.sample_sheet --star_file $star_file --level $params.level
     """
 }
 

@@ -14,7 +14,7 @@ SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 P5_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/p5.txt')
 P7_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/p7.txt')
 RT_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/rt2.txt')
-
+LIG_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/ligation.txt')
 
 
 def get_programmed_pcr_combos(p5_lookup, p7_lookup, p5_cols_used, p7_rows_used):
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', required=True, help='Output directory for files.')
     parser.add_argument('--p7_length', type=int, default=10, help='Expected P7 index length.')
     parser.add_argument('--p5_length', type=int, default=10, help='Expected P5 index length.')
-
+    parser.add_argument('--level', required=True, help = "2 or 3 level sci?")
     args = parser.parse_args()
 
     lane_num = args.file_name
@@ -95,6 +95,11 @@ if __name__ == '__main__':
     reverse_complement_i5 = bu.reverse_complement_i5(args.run_directory)
 
     run_info = bu.get_run_info(args.run_directory)
+    
+    if args.level == "3":
+        ligation_lookup = bu.load_whitelist(LIG_FILE, variable_lengths=True)
+        ligation_9_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 9}
+        ligation_10_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 10}
 
     # Load barcodes
     p7_lookup = bu.load_whitelist(P7_FILE)
@@ -109,32 +114,82 @@ if __name__ == '__main__':
     programmed_pcr_combos = get_programmed_pcr_combos(p5_lookup, p7_lookup, args.p5_cols_used, args.p7_rows_used)
 
     # Define where all sequences are and what the whitelists are
-    barcode_spec = {
-        'p5': {
-            'start': 1,
-            'end':  args.p5_length,
-            'read': 'i5',
-            'whitelist': p5_lookup
-        },
-        'p7': {
-            'start': 1,
-            'end': args.p7_length,
-            'read': 'i7',
-            'whitelist': p7_lookup
-        },
-        'umi': {
-            'start': 1,
-            'end': 8,
-            'read': 'r1'
-        },
-        'rt': {
-            'start': 9,
-            'end': 18,
-            'read': 'r1',
-            'whitelist': RT_FILE
-        }  
-    }
 
+    if args.level == "3":
+        barcode_spec = {
+            'p5': {
+                'start': 1,
+                'end':  args.p5_length,
+                'read': 'i5',
+                'whitelist': p5_lookup
+            },
+            'p7': {
+                'start': 1,
+                'end': args.p7_length,
+                'read': 'i7',
+                'whitelist': p7_lookup
+            },
+            'ligation_9': {
+                'start': 1,
+                'end': 9,
+                'read': 'r1',
+                'whitelist': ligation_9_lookup
+            },
+            'ligation_10': {
+                'start': 1,
+                'end': 10,
+                'read': 'r1',
+                'whitelist': ligation_10_lookup
+            },
+            'umi_9': {
+                'start': 16,
+                'end': 23,
+                'read': 'r1'
+            },
+            'umi_10': {
+                'start': 17,
+                'end': 24,
+                'read': 'r1'
+            },
+            'rt_9': {
+                'start': 24,
+                'end': 33,
+                'read': 'r1',
+                'whitelist': args.rt_barcodes
+            },
+            'rt_10': {
+                'start': 25,
+                'end': 34,
+                'read': 'r1',
+                'whitelist': args.rt_barcodes
+            }  
+        }
+    else:
+        barcode_spec = {
+            'p5': {
+                'start': 1,
+                'end':  args.p5_length,
+                'read': 'i5',
+                'whitelist': p5_lookup
+            },
+            'p7': {
+                'start': 1,
+                'end': args.p7_length,
+                'read': 'i7',
+                'whitelist': p7_lookup
+            },
+            'umi': {
+                'start': 1,
+                'end': 8,
+                'read': 'r1'
+            },
+            'rt': {
+                'start': 9,
+                'end': 18,
+                'read': 'r1',
+                'whitelist': RT_FILE
+            }  
+        }
 
   # Set up the output files
     sample_rt_lookup = load_sample_layout(args.sample_layout)
@@ -148,77 +203,178 @@ if __name__ == '__main__':
     for sample in sample_to_output_file_lookup:
         sample_read_counts[sample] = 0
 
-    total_reads = 0
-    total_uncorrected = 0
-    total_pcr_mismatch = 0
-    total_unused_rt_well = 0
-    total_corrected = 0
-    read_pair_dict = {}
-    rt_dict = {}
-    # Finally, process reads
-    for read_number, entry in enumerate(bu.parse_fastq_barcodes(args.read1, args.read2, spec=barcode_spec, edit_distance=1)):
+    if args.level == "3":
+        total_reads = 0
+        total_uncorrected = 0
+        total_pcr_mismatch = 0
+        total_ambiguous_ligation_length = 0
+        total_unused_rt_well = 0
+        total_corrected_9 = 0
+        total_corrected_10 = 0
+        read_pair_dict = {}
+        rt_dict = {}
+        lig_dict = {}        
+        # Finally, process reads
+        for read_number, entry in enumerate(bu.parse_fastq_barcodes(args.read1, args.read2, spec=barcode_spec, edit_distance=1)):
 
-        total_reads += 1
+            total_reads += 1
 
-        # Only allow the programmed PCR combos (helps clean things up a bit)
-        p5 = entry['p5']
-        p7 = entry['p7']
- 
-        if (p5, p7) in read_pair_dict:
-            read_pair_dict[(p5, p7)] += 1
-        else:
-            read_pair_dict[(p5, p7)] = 1
-        
-        corrected = entry['rt'] is not None
-        corrected_p5_p7 = p5 is not None and p7 is not None
-
-        if corrected and corrected_p5_p7:
-            total_corrected += 1
-            rt_barcode = entry['rt']
-            umi = entry['umi']
-        else:
-            total_uncorrected += 1
-            continue
-
-        if not (p5, p7) in programmed_pcr_combos:
-            total_pcr_mismatch += 1
-            continue
-
-        if rt_barcode not in sample_rt_lookup:
-            total_unused_rt_well += 1
-            continue
-
-        sample = sample_rt_lookup[rt_barcode]
-        sample_read_number = sample_read_counts[sample] + 1
-        sample_read_counts[sample] += 1
-  
-        if rt_barcode in rt_dict:
-            rt_dict[rt_barcode] += 1
-        else:
-            rt_dict[rt_barcode] = 1
-
-        r2_qual = entry['r2_qual']
-        r2_seq = entry['r2_seq']
-        output_name = f'@{sample}-P7{p5}-P5{p7}_{sample_read_number}|{sample}|{p5}|{p7}|{rt_barcode}|{umi}'
-        output_line = f'{output_name}\n{r2_seq}\n+\n{r2_qual}\n'
-        sample_to_output_file_lookup[sample].write(output_line)
-
-    # Close output files
-    for f in sample_to_output_file_lookup.values():
-        f.close()
-
-    # Output stats
-    total_passed_reads = sum(list(sample_read_counts.values()))
-    stats = OrderedDict()
-    stats['total_input_reads'] = total_reads
-    stats['total_passed_reads'] = total_passed_reads
-    stats['fraction_passed_reads'] = total_passed_reads / total_reads
-    stats['fraction_uncorrected_reads'] = total_uncorrected / total_reads
-    stats['fraction_invalid_rt_well'] = total_unused_rt_well / total_reads
-    stats['fraction_pcr_mismatch'] = total_pcr_mismatch / total_reads
-    stats['total_reads_corrected'] = total_corrected
-    stats['total_reads_passed_per_sample'] = sample_read_counts
+            # Only allow the programmed PCR combos (helps clean things up a bit)
+            p5 = entry['p5']
+            p7 = entry['p7']
     
+            if (p5, p7) in read_pair_dict:
+                read_pair_dict[(p5, p7)] += 1
+            else:
+                read_pair_dict[(p5, p7)] = 1
+
+            ## Choose between the _8 and _9 options based on which correct properly
+            corrected_9 = entry['ligation_9'] is not None and entry['rt_9'] is not None
+            corrected_10 = entry['ligation_10'] is not None and entry['rt_10'] is not None
+            corrected_p5_p7 = p5 is not None and p7 is not None
+
+            if corrected_9 and corrected_10:
+                total_ambiguous_ligation_length += 1
+                continue
+
+            if corrected_9 and corrected_p5_p7:
+                total_corrected_9 += 1
+                ligation_barcode = entry['ligation_9']
+                rt_barcode = entry['rt_9']
+                umi = entry['umi_9']
+            elif corrected_10 and corrected_p5_p7:
+                total_corrected_10 += 1
+                ligation_barcode = entry['ligation_10']
+                rt_barcode = entry['rt_10']
+                umi = entry['umi_10']
+            else:
+                total_uncorrected += 1
+                continue
+
+            if not (p5, p7) in programmed_pcr_combos:
+                total_pcr_mismatch += 1
+                continue
+
+            if rt_barcode not in sample_rt_lookup:
+                total_unused_rt_well += 1
+                continue
+
+            sample = sample_rt_lookup[rt_barcode]
+            sample_read_number = sample_read_counts[sample] + 1
+            sample_read_counts[sample] += 1
+
+            if ligation_barcode in lig_dict:
+                lig_dict[ligataion_barcode] += 1
+            else:
+                lig_dict[ligation_barcode] = 1
+
+            if rt_barcode in rt_dict:
+                rt_dict[rt_barcode] += 1
+            else:
+                rt_dict[rt_barcode] = 1
+
+            r2_qual = entry['r2_qual']
+            r2_seq = entry['r2_seq']
+            output_name = f'@{sample}-P5{p5}-P7{p7}_{sample_read_number}|{sample}|{p5}|{p7}|{rt_barcode}_{ligation_barcode}|{umi}'
+            output_line = f'{output_name}\n{r2_seq}\n+\n{r2_qual}\n'
+            sample_to_output_file_lookup[sample].write(output_line)
+
+        # Close output files
+        for f in sample_to_output_file_lookup.values():
+            f.close()
+
+        # Output stats
+        total_passed_reads = sum(list(sample_read_counts.values()))
+        stats = OrderedDict()
+        stats['total_input_reads'] = total_reads
+        stats['total_passed_reads'] = total_passed_reads
+        stats['fraction_passed_reads'] = total_passed_reads / total_reads
+        stats['fraction_uncorrected_reads'] = total_uncorrected / total_reads
+        stats['fraction_ambiguous_ligation_length'] = total_ambiguous_ligation_length / total_reads
+        stats['fraction_invalid_rt_well'] = total_unused_rt_well / total_reads
+        stats['fraction_pcr_mismatch'] = total_pcr_mismatch / total_reads
+        stats['total_reads_corrected_when_9bp_ligation'] = total_corrected_9
+        stats['total_reads_corrected_when_10bp_ligation'] = total_corrected_10
+        stats['total_reads_passed_per_sample'] = sample_read_counts
+        lig_dict_file = os.path.join(args.output_dir, lane_num + ".lig_counts.csv")
+        # Output read_pair_dict
+        with open(lig_dict_file, 'w') as f:
+            for lig,val in lig_dict.items():
+                if lig is not None:
+                    f.write(lig + "," + str(val) + "\n")
+
+    else:
+        total_reads = 0
+        total_uncorrected = 0
+        total_pcr_mismatch = 0
+        total_unused_rt_well = 0
+        total_corrected = 0
+        read_pair_dict = {}
+        rt_dict = {}
+        # Finally, process reads
+        for read_number, entry in enumerate(bu.parse_fastq_barcodes(args.read1, args.read2, spec=barcode_spec, edit_distance=1)):
+
+            total_reads += 1
+
+            # Only allow the programmed PCR combos (helps clean things up a bit)
+            p5 = entry['p5']
+            p7 = entry['p7']
+
+            if (p5, p7) in read_pair_dict:
+                read_pair_dict[(p5, p7)] += 1
+            else:
+                read_pair_dict[(p5, p7)] = 1
+
+            corrected = entry['rt'] is not None
+            corrected_p5_p7 = p5 is not None and p7 is not None
+
+            if corrected and corrected_p5_p7:
+                total_corrected += 1
+                rt_barcode = entry['rt']
+                umi = entry['umi']
+            else:
+                total_uncorrected += 1
+                continue
+
+            if not (p5, p7) in programmed_pcr_combos:
+                total_pcr_mismatch += 1
+                continue
+
+            if rt_barcode not in sample_rt_lookup:
+                total_unused_rt_well += 1
+                continue
+
+            sample = sample_rt_lookup[rt_barcode]
+            sample_read_number = sample_read_counts[sample] + 1
+            sample_read_counts[sample] += 1
+
+            if rt_barcode in rt_dict:
+                rt_dict[rt_barcode] += 1
+            else:
+                rt_dict[rt_barcode] = 1
+
+            r2_qual = entry['r2_qual']
+            r2_seq = entry['r2_seq']
+            output_name = f'@{sample}-P7{p5}-P5{p7}_{sample_read_number}|{sample}|{p5}|{p7}|{rt_barcode}|{umi}'
+            output_line = f'{output_name}\n{r2_seq}\n+\n{r2_qual}\n'
+            sample_to_output_file_lookup[sample].write(output_line)
+
+        # Close output files
+        for f in sample_to_output_file_lookup.values():
+            f.close()
+
+        # Output stats
+        total_passed_reads = sum(list(sample_read_counts.values()))
+        stats = OrderedDict()
+        stats['total_input_reads'] = total_reads
+        stats['total_passed_reads'] = total_passed_reads
+        stats['fraction_passed_reads'] = total_passed_reads / total_reads
+        stats['fraction_uncorrected_reads'] = total_uncorrected / total_reads
+        stats['fraction_invalid_rt_well'] = total_unused_rt_well / total_reads
+        stats['fraction_pcr_mismatch'] = total_pcr_mismatch / total_reads
+        stats['total_reads_corrected'] = total_corrected
+        stats['total_reads_passed_per_sample'] = sample_read_counts
+ 
     dict_file = os.path.join(args.output_dir, lane_num + ".pcr_counts.csv")
     # Output read_pair_dict
     with open(dict_file, 'w') as f:

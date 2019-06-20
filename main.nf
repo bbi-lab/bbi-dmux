@@ -148,7 +148,7 @@ process seg_sample_fastqs {
         --read1 <(zcat $R1) --read2 <(zcat $R2) \
         --file_name $R1 --sample_layout $sample_sheet_file \
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
-        --output_dir ./demux_out
+        --output_dir ./demux_out --level $params.level
 
     """    
 }

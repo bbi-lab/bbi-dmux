@@ -1,5 +1,3 @@
-#!/usr/bin/env Rscript
-
 suppressPackageStartupMessages({
   library(ggplot2)
   library(argparse)
@@ -32,7 +30,7 @@ for (lane in lane_list) {
   
   rt_counts <- read.csv(paste0(lane, ".rt_counts.csv"), header = F, stringsAsFactors = FALSE)
   rt_counts$plate <- stringr::str_split_fixed(rt_counts$V1, "-", 2)[,1]
-  rt_counts$well <- stringr::str_split_fixed(rt_counts$V1, "-", 2)[,2] 
+  rt_counts$well <- stringr::str_split_fixed(rt_counts$V1, "-", 2)[,2]
   for(p in unique(rt_counts$plate)) {
     sub_df <- rt_counts[rt_counts$plate == p,]
     rt_df <- data.frame(rows = substring(sub_df$well, first = 1, last = 1),
@@ -50,41 +48,45 @@ for (lane in lane_list) {
             scale_fill_gradient(low = "white", high = "blue"))
     dev.off()
   }
-if(args$level == "3") {
-  rows <- c("A", "B", "C", "D", "E", "F", "G", "H")
-  cols <- 1:12
-  plate <- data.frame(expand.grid(cols, rows))
-  levels(plate$Var2) <- rev(levels(plate$Var2))
-  
-  lig_counts <- read.csv(paste0(lane, ".lig_counts.csv"), header = F, stringsAsFactors = FALSE)
-  lig_counts$plate <- stringr::str_split_fixed(lig_counts$V1, "-", 2)[,1]
-  lig_counts$well <- stringr::str_split_fixed(lig_counts$V1, "-", 2)[,2] 
-  for(p in unique(lig_counts$plate)) {
-    sub_df <- lig_counts[lig_counts$plate == p,]
-    lig_df <- data.frame(rows = substring(sub_df$well, first = 1, last = 1),
-                        cols = as.numeric(substring(sub_df$well, first = 2,
-                                                    last = nchar(sub_df$well))), ReadCount = sub_df$V2)
+  if(args$level == "3") {
+    rows <- c("A", "B", "C", "D", "E", "F", "G", "H")
+    cols <- 1:12
+    plate <- data.frame(expand.grid(cols, rows))
+    lig_map <- do.call(rbind, list(plate, plate, plate, plate))
+    lig_map$lig <- paste0("LIG", 1:384)
+    lig_map$plate <- c(rep("P1", 96), rep("P2", 96), rep("P3", 96), rep("P4", 96))
+    levels(plate$Var2) <- rev(levels(plate$Var2))
     
     
-    data <- merge(plate, lig_df, by.x=c("Var1", "Var2"),
-                  by.y=c("cols", "rows"), all.x=T)
-    data$ReadCount[is.na(data$ReadCount)] <- 0
-    
-    png(file = paste0("demux_dash/img/", lane, "_", p, ".lig_plate.png"), width = 6, height = 4, res = 200, units = "in")
-    print(ggplot(aes(as.factor(Var1), Var2, fill = ReadCount), data = data) +
-            geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
-            scale_fill_gradient(low = "white", high = "blue"))
-    dev.off()
+    lig_counts <- read.csv(paste0(lane, ".lig_counts.csv"), header = F, stringsAsFactors = FALSE)
+    lig_counts <- merge(lig_counts, lig_map, by.x="V1", by.y="lig", all.x=T)
+    lig_counts$well <- paste0(lig_counts$Var2, lig_counts$Var1)
+    for(p in unique(lig_counts$plate)) {
+      sub_df <- lig_counts[lig_counts$plate == p,]
+      lig_df <- data.frame(rows = substring(sub_df$well, first = 1, last = 1),
+                           cols = as.numeric(substring(sub_df$well, first = 2,
+                                                       last = nchar(sub_df$well))), ReadCount = sub_df$V2)
+      
+      
+      data <- merge(plate, lig_df, by.x=c("Var1", "Var2"),
+                    by.y=c("cols", "rows"), all.x=T)
+      data$ReadCount[is.na(data$ReadCount)] <- 0
+      
+      png(file = paste0("demux_dash/img/", lane, "_", p, ".lig_plate.png"), width = 6, height = 4, res = 200, units = "in")
+      print(ggplot(aes(as.factor(Var1), Var2, fill = ReadCount), data = data) +
+              geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
+              scale_fill_gradient(low = "white", high = "blue"))
+      dev.off()
+    }
   }
-}
   pcr_counts <- read.csv(paste0(lane, ".pcr_counts.csv"), header = F, stringsAsFactors = FALSE)
   pcr_counts$p5_row <- substring(pcr_counts$V1, first = 1, last = 1)
   pcr_counts$p5_col <- as.numeric(substring(pcr_counts$V1, first = 2,
                                             last = nchar(pcr_counts$V1)))
-
+  
   pcr_counts$p7_row <- substring(pcr_counts$V2, first = 1, last = 1)
   pcr_counts$p7_col <- as.numeric(substring(pcr_counts$V2, first = 2,
-                                            last = nchar(pcr_counts$V2)))  
+                                            last = nchar(pcr_counts$V2)))
   for (i in  1:length(unlist(stringr::str_split(args$p7_rows, " ")))) {
     sub <- subset(pcr_counts, p7_row == p7_rows[i] & p5_col == as.numeric(p5_cols[i]))
     p5_df <- data.frame(rows = sub$p5_row,
@@ -101,21 +103,21 @@ if(args$level == "3") {
   }
   p5_agg <- aggregate(pcr_counts$V3, by = list(orig=pcr_counts$V1), sum)
   p5_df <- data.frame(rows = substring(p5_agg$orig, first = 1, last = 1),
-                         cols = as.numeric(substring(p5_agg$orig, first = 2,
-                                          last = nchar(p5_agg$orig))), ReadCount = p5_agg$x)
+                      cols = as.numeric(substring(p5_agg$orig, first = 2,
+                                                  last = nchar(p5_agg$orig))), ReadCount = p5_agg$x)
   
   data <- merge(plate, p5_df, by.x=c("Var1", "Var2"),
                 by.y=c("cols", "rows"), all.x=T)
   data$ReadCount[is.na(data$ReadCount)] <- 0
   
-
+  
   
   
   
   p7_agg <- aggregate(pcr_counts$V3, by = list(orig=pcr_counts$V2), sum)
   p7_df <- data.frame(rows = substring(p7_agg$orig, first = 1, last = 1),
                       cols = as.numeric(substring(p7_agg$orig, first = 2,
-                                       last = nchar(p7_agg$orig))), ReadCount = p7_agg$x)
+                                                  last = nchar(p7_agg$orig))), ReadCount = p7_agg$x)
   
   data <- merge(plate, p7_df, by.x=c("Var1", "Var2"),
                 by.y=c("cols", "rows"), all.x=T)
@@ -123,10 +125,10 @@ if(args$level == "3") {
   
   png(file = paste0("demux_dash/img/", lane, ".p7_plate.png"), width = 6, height = 4, res = 200, units = "in")
   print(ggplot(aes(as.factor(Var1), Var2, fill = ReadCount), data = data) +
-    geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
-    scale_fill_gradient(low = "white", high = "blue") )
+          geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
+          scale_fill_gradient(low = "white", high = "blue") )
   dev.off()
-
+  
 }
 
 
@@ -140,7 +142,7 @@ outtab <- lapply(lane_list, function(x) {
              `Percent uncorrected`= round(sumstats$fraction_uncorrected_reads * 100, digits = 2),
              `Percent invalid RT`= round(sumstats$fraction_invalid_rt_well * 100, digits = 2),
              `Percent PCR mismatch`= round(sumstats$fraction_pcr_mismatch * 100, digits = 2)
-             )
+  )
 })
 tab <- as.data.frame(do.call(rbind, outtab))
 row.names(tab) <- lane_names
@@ -173,10 +175,48 @@ top <- HTML('<!doctype html>
         }
         </style>
   </head>')
+lig_code <- ""
+lig_head <- ""
+if(args$level == "3") {
+  lig_head <- HTML('<li class="nav-item">
+                <a class="nav-link" href="#lig">
+                  <span data-feather="shopping-cart"></span>
+                  Ligation Barcodes
+                </a>
+              </li>')
+  lig_plates <- unique(lig_counts$plate)
+  lig_code <- list(
+  HTML('          <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h3" id="lig">Ligation Barcodes</h1>
+            </div>
+          <nav>
+              <div class="nav nav-tabs" id="navlig-tab" role="tablist">'),
+  lapply(lane_nums, function(num) {
+    tags$a(class="nav-item nav-link", id=paste0("navlig-lane", num, "-tab"),
+           `data-toggle`="tab", href=paste0("#navlig-lane", num), role="tab",
+           `aria-controls`=paste0("navlig-lane", num),`aria-selected`="false", paste("Lane", num))
+  }),
+  HTML('              </div>
+          </nav>
+       <div class="tab-content" id="nav-tabContent">'),
+  lapply(lane_nums, function(num) {
+    tags$div(class="tab-pane fade", id=paste0("navlig-lane", num),
+             role="tabpanel", `aria-labelledby`=paste0("navlig-lane", num, "-tab"),
+             list(lapply(lig_plates, function(i) {
+               list(tags$h4(paste0("Ligation plate ",i)),
+                    tags$img(src=paste0("img/L00", num, "_", i, ".lig_plate.png"),
+                             width = "50%",
+                             class="rounded mx-auto d-block",
+                             alt="..."))
+             })))
+    
+  }))
+}
+
 
 body <- tags$body(
   list(
-  HTML('    <nav class="navbar navbar-expand-md sticky-top navbar-light" style="background-color: #e3f2fd;">
+    HTML('    <nav class="navbar navbar-expand-md sticky-top navbar-light" style="background-color: #e3f2fd;">
         <div class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">
             <ul class="navbar-nav mr-auto">
                 <img src="img/bbi_icon.png" height="70" class="d-inline-block align-top" alt="">
@@ -210,121 +250,121 @@ body <- tags$body(
                   <span data-feather="shopping-cart"></span>
                   PCR Barcodes
                 </a>
-              </li>
-            </ul>
+              </li>',
+         lig_head,
+            '</ul>
           </div>
         </nav>
        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4" style="padding-top: 15px;">'),
-  
-  tags$div(class="tab-content", id="nav-tabContent",
-    list(HTML('<div class="tab-content" id="nav-tabContent">
+    
+    tags$div(class="tab-content", id="nav-tabContent",
+             list(HTML('<div class="tab-content" id="nav-tabContent">
               <div class="tab-pane fade show active" id="navstat-lane1" role="tabpanel" aria-labelledby="navstat-lane1-tab">
                   <h3 class="h3" id="summary">Summary statistics</h3>
                   <table class="table table-hover">
                       <thead>
                         <tr>
                           <th scope="col"></th>'), 
-    lapply(lane_names, function(lane) {
-      tags$th(scope="col", lane)
-    }),
-    HTML('</tr>
+                  lapply(lane_names, function(lane) {
+                    tags$th(scope="col", lane)
+                  }),
+                  HTML('</tr>
                       </thead>
                       <tbody>
                         <tr>
                           <th scope="row">Total input reads</th>'),
-    lapply(tab$Total.input.reads, function(lane) {
-      tags$td(lane)
-    }),
-    HTML('</tr>
+                  lapply(tab$Total.input.reads, function(lane) {
+                    tags$td(lane)
+                  }),
+                  HTML('</tr>
                         <tr>
                           <th scope="row">Total passed reads</th>'),
-    lapply(tab$Total.passed.reads, function(lane) {
-      tags$td(lane)
-    }),   
-    HTML('                        </tr>
+                  lapply(tab$Total.passed.reads, function(lane) {
+                    tags$td(lane)
+                  }),   
+                  HTML('                        </tr>
                         <tr>
                           <th scope="row">Pass percentage</th>'),
-    lapply(tab$Pass.percentage, function(lane) {
-      tags$td(lane)
-    }),
-    HTML('                        </tr>
+                  lapply(tab$Pass.percentage, function(lane) {
+                    tags$td(lane)
+                  }),
+                  HTML('                        </tr>
                         <tr>
                           <th scope="row">Percent uncorrected</th>'),
-    lapply(tab$Percent.uncorrected, function(lane) {
-      tags$td(lane)
-    }),
-    HTML('                        </tr>
+                  lapply(tab$Percent.uncorrected, function(lane) {
+                    tags$td(lane)
+                  }),
+                  HTML('                        </tr>
                         <tr>
                           <th scope="row">Percent invalid RT</th>'),
-    lapply(tab$Percent.invalid.RT, function(lane) {
-      tags$td(lane)
-    }),
-    HTML('                        </tr>
+                  lapply(tab$Percent.invalid.RT, function(lane) {
+                    tags$td(lane)
+                  }),
+                  HTML('                        </tr>
                         <tr>
                           <th scope="row">Percent PCR mismatch</th>'),
-    lapply(tab$Percent.PCR.mismatch, function(lane) {
-      tags$td(lane)
-    }),
-    HTML('                       </tr>
+                  lapply(tab$Percent.PCR.mismatch, function(lane) {
+                    tags$td(lane)
+                  }),
+                  HTML('                       </tr>
                       </tbody>
                     </table>'))),
-  HTML('          <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    HTML('          <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                 <h1 class="h3" id="pcr">RT Barcodes</h1>
             </div>
           <nav>
               <div class="nav nav-tabs" id="navrt-tab" role="tablist">'),
-  lapply(lane_nums, function(num) {
-    tags$a(class="nav-item nav-link", id=paste0("navrt-lane", num, "-tab"), 
-           `data-toggle`="tab", href=paste0("#navrt-lane", num), role="tab", 
-           `aria-controls`=paste0("navrt-lane", num),`aria-selected`="false", paste("Lane", num))
-  }),
-  HTML('              </div>
+    lapply(lane_nums, function(num) {
+      tags$a(class="nav-item nav-link", id=paste0("navrt-lane", num, "-tab"), 
+             `data-toggle`="tab", href=paste0("#navrt-lane", num), role="tab", 
+             `aria-controls`=paste0("navrt-lane", num),`aria-selected`="false", paste("Lane", num))
+    }),
+    HTML('              </div>
           </nav>
        <div class="tab-content" id="nav-tabContent">'),
-  lapply(lane_nums, function(num) {
-    tags$div(class="tab-pane fade", id=paste0("navrt-lane", num), 
-             role="tabpanel", `aria-labelledby`=paste0("navrt-lane", num, "-tab"),
-             list(lapply(unique(rt_counts$plate), function(p) {
-               list(tags$h4(paste0("Plate ",p)),
-                    tags$img(src=paste0("img/L00", num, "_", p, ".rt_plate.png"), 
-                             width = "50%",
-                             class="rounded mx-auto d-block",
-                             alt="..."))
-             })))
-
-  }),
- 
-  # PCR barcodes
-  
-  HTML('          <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    lapply(lane_nums, function(num) {
+      tags$div(class="tab-pane fade", id=paste0("navrt-lane", num), 
+               role="tabpanel", `aria-labelledby`=paste0("navrt-lane", num, "-tab"),
+               list(lapply(unique(rt_counts$plate), function(p) {
+                 list(tags$h4(paste0("Plate ",p)),
+                      tags$img(src=paste0("img/L00", num, "_", p, ".rt_plate.png"), 
+                               width = "50%",
+                               class="rounded mx-auto d-block",
+                               alt="..."))
+               })))
+      
+    }),
+    
+    # PCR barcodes
+    
+    HTML('          <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                 <h1 class="h3" id="pcr">PCR Barcodes</h1>
             </div>
           <nav>
               <div class="nav nav-tabs" id="navrt-tab" role="tablist">'),
-  lapply(lane_nums, function(num) {
-    tags$a(class="nav-item nav-link", id=paste0("navpcr-lane", num, "-tab"), 
-           `data-toggle`="tab", href=paste0("#navpcr-lane", num), role="tab", 
-           `aria-controls`=paste0("navpcr-lane", num),`aria-selected`="false", paste("Lane", num))
-  }),
-  HTML('              </div>
+    lapply(lane_nums, function(num) {
+      tags$a(class="nav-item nav-link", id=paste0("navpcr-lane", num, "-tab"), 
+             `data-toggle`="tab", href=paste0("#navpcr-lane", num), role="tab", 
+             `aria-controls`=paste0("navpcr-lane", num),`aria-selected`="false", paste("Lane", num))
+    }),
+    HTML('              </div>
           </nav>
        <div class="tab-content" id="nav-tabContent">'),
-  lapply(lane_nums, function(num) {
-    tags$div(class="tab-pane fade", id=paste0("navpcr-lane", num), 
-             role="tabpanel", `aria-labelledby`=paste0("navpcr-lane", num, "-tab"),
-             list(lapply(1:length(unlist(stringr::str_split(args$p7_rows, " "))), function(i) {
-               list(tags$h4(paste0("PCR Combo ",p7_rows[i], p5_cols[i])),
-                    tags$img(src=paste0("img/L00", num, "_", p7_rows[i], p5_cols[i], ".pcr_plate.png"), 
-                             width = "50%",
-                             class="rounded mx-auto d-block",
-                             alt="..."))
-             })))
+    lapply(lane_nums, function(num) {
+      tags$div(class="tab-pane fade", id=paste0("navpcr-lane", num), 
+               role="tabpanel", `aria-labelledby`=paste0("navpcr-lane", num, "-tab"),
+               list(lapply(1:length(unlist(stringr::str_split(args$p7_rows, " "))), function(i) {
+                 list(tags$h4(paste0("PCR Combo ",p7_rows[i], p5_cols[i])),
+                      tags$img(src=paste0("img/L00", num, "_", p7_rows[i], p5_cols[i], ".pcr_plate.png"), 
+                               width = "50%",
+                               class="rounded mx-auto d-block",
+                               alt="..."))
+               })))
+      
+    }),
     
-  }),
-  
-  
-  
-   
+    lig_code,
+    
     HTML('
     </main>
       </div>
@@ -341,12 +381,11 @@ body <- tags$body(
 )
 
 end <- HTML('</html>')
-  
+
 
 fileConn<-file("demux_dash/demux_dash.html")
 writeLines(c(as.character(top),as.character(body), as.character(end)), fileConn)
 close(fileConn)
 
 
-
-
+    

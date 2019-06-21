@@ -268,7 +268,7 @@ if __name__ == '__main__':
             sample_read_counts[sample] += 1
 
             if ligation_barcode in lig_dict:
-                lig_dict[ligataion_barcode] += 1
+                lig_dict[ligation_barcode] += 1
             else:
                 lig_dict[ligation_barcode] = 1
 

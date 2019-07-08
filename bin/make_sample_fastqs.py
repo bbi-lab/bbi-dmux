@@ -98,8 +98,6 @@ if __name__ == '__main__':
 
     reverse_complement_i5 = bu.reverse_complement_i5(args.run_directory)
 
-    run_info = bu.get_run_info(args.run_directory)
-    
     if args.level == "3":
         ligation_lookup = bu.load_whitelist(LIG_FILE, variable_lengths=True)
         ligation_9_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 9}

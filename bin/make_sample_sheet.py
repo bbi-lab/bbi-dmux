@@ -62,7 +62,7 @@ def get_run_info(flow_cell_path):
         bcl_run_info = bcl_run_info[0]
 
     # Set up a few nodes for parsing
-    tree = ET.parse(open_file(bcl_run_info))
+    tree = ET.parse(bu.open_file(bcl_run_info))
 
     setup_node = tree.getroot().find("Setup")
     if setup_node is None:

@@ -4,7 +4,6 @@ params.help = false
 params.rerun = false
 params.star_file = "$baseDir/bin/star_file.txt"
 params.level = 3
-params.novaseq = false
 
 //print usage
 if (params.help) {
@@ -36,7 +35,6 @@ if (params.help) {
     log.info '    process.queue = "trapnell-short.q"         The queue on the cluster where the jobs should be submitted. '
     log.info '    params.rerun = [sample1, sample2]          Add to only rerun certain samples from trimming on.'
     log.info '    params.star_file = PATH/TO/FILE            File with the genome to star maps, similar to the one included with the package.'
-    log.info '    params.novaseq = false                     Whether the run is a novaseq run - only affects performance, not required.'
     log.info ''
     log.info 'Issues? Contact hpliner@uw.edu'
     exit 1
@@ -126,12 +124,6 @@ process bcl2fastq {
     """
 }
 
-if (params.novaseq) {
-   fastqs_ch = Channel.from(fastqs).splitFastq(by: 100000, pe:true, file:true)
-} else {
-   fastqs_ch = fastqs
-}
-
 process seg_sample_fastqs {
     cache 'lenient'
     module 'java/latest:modules:modules-init:modules-gs:python/3.6.4'
@@ -141,7 +133,7 @@ process seg_sample_fastqs {
     publishDir  path: "${params.output_dir}/", pattern: "demux_out/*.csv", mode: 'copy' 
 
     input:
-        set file(R1), file(R2) from fastqs_ch
+        set file(R1), file(R2) from fastqs
         file sample_sheet_file
 
     output:

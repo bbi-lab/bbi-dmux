@@ -33,14 +33,14 @@ First, you need to have python available. You should have version 3.6.4 in order
 module load python/3.6.4
 ```
 
-You must also have a few modules other than python and R loaded:
+You must also have a few modules other than python loaded:
 
 ```
 module load drmaa/latest
 module load git/latest
 ```
 
-After loading the above modules, you must also install the following python package:
+After loading the above modules, you must install the following python package:
 
 ```
 pip install --user drmaa

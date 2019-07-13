@@ -69,7 +69,7 @@ curl -s https://get.nextflow.io | bash
 ```
 You probably also want to add Nextflow to your path so you can access it from anywhere. Do this by adding the following to your .bashrc file (located in your home directory).
 ```
-export PATH=/path/to/whereever/you/downloaded/nextflow:$PATH
+export PATH=/path/to/whereever/you/downloaded/:$PATH
 ```
 
 Next, pull the pipeline to make sure you're on the latest version

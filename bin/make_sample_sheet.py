@@ -82,7 +82,7 @@ def reverse_complement_i5(name):
     else:
         raise ValueError('Invalid input, could not detect BCL or instrument ID.')
 
-
+    return SEQUENCERS_P5_RC_MAP[sequencer_type]
 
 # Taken from barcodeutils, but excluding what's not needed and not always found
 def get_run_info(flow_cell_path):

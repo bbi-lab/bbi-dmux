@@ -4,11 +4,11 @@ params.help = false
 params.rerun = false
 params.star_file = "$baseDir/bin/star_file.txt"
 params.level = 3
-
+params.fastq_chunk_size = 100000000
 //print usage
 if (params.help) {
     log.info ''
-    log.info 'BBI 2-level sci-RNA-seq Demultiplexer'
+    log.info 'BBI sci-RNA-seq Demultiplexer'
     log.info '--------------------------------'
     log.info ''
     log.info 'For reproducibility, please specify all parameters to a config file'
@@ -35,6 +35,7 @@ if (params.help) {
     log.info '    process.queue = "trapnell-short.q"         The queue on the cluster where the jobs should be submitted. '
     log.info '    params.rerun = [sample1, sample2]          Add to only rerun certain samples from trimming on.'
     log.info '    params.star_file = PATH/TO/FILE            File with the genome to star maps, similar to the one included with the package.'
+    log.info '    params.fastq_chunk_size = 100000000        The number of reads that should be processed together for demultiplexing.'
     log.info ''
     log.info 'Issues? Contact hpliner@uw.edu'
     exit 1
@@ -129,30 +130,186 @@ process seg_sample_fastqs {
     module 'java/latest:modules:modules-init:modules-gs:python/3.6.4'
     clusterOptions "-l mfree=1G"
     publishDir  path: "${params.output_dir}/", pattern: "demux_out/*.stats.json", mode: 'copy'
-    publishDir  path: "${params.output_dir}/", pattern: "demux_out/*.fastq", mode: 'copy'
-    publishDir  path: "${params.output_dir}/", pattern: "demux_out/*.csv", mode: 'copy' 
 
     input:
-        set file(R1), file(R2) from fastqs
+        set file(R1), file(R2) from fastqs.splitFastq(by: params.fastq_chunk_size, file: true, pe: true)
         file sample_sheet_file
 
     output:
         file "demux_out/*" into seg_output
         file "demux_out/*.fastq" into samp_fastqs_check mode flatten
-        file "demux_out/*.stats.json" into stats
-        file "demux_out/*.csv" into csv_stats
+        file "demux_out/*.stats.json" into json_stats mode flatten
+        file "demux_out/*.csv" into csv_stats mode flatten
 
     """
     mkdir demux_out
     make_sample_fastqs.py --run_directory $params.run_dir \
-        --read1 <(zcat $R1) --read2 <(zcat $R2) \
+        --read1 $R1 --read2 $R2 \
         --file_name $R1 --sample_layout $sample_sheet_file \
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
         --output_dir ./demux_out --level $params.level
-
     """    
 }
 
+get_prefix = { fname ->
+    (fname - ~/_R1_001\.[0-9]+\.fastq.fastq/)
+}
+
+samp_fastqs_check
+    .map { file -> tuple(get_prefix(file.name), file) }
+    .groupTuple()
+    .set { grouped_files }
+
+
+process recombine_fastqs {
+    cache 'lenient'
+    module 'java/latest:modules:modules-init:modules-gs:python/3.6.4'
+    publishDir  path: "${params.output_dir}/demux_out", pattern: "*.fastq.gz", mode: 'move'
+
+    input:
+        set prefix, file(all_fqs) from grouped_files 
+
+    output:
+        file "*.gz" into gz_fqs 
+
+    """
+    cat $all_fqs | gzip  > ${prefix}.fastq.gz 
+
+    """
+       
+}
+
+csv_prefix = { fname ->
+    (fname - ~/_R1_001\.[0-9]+\.fastq\.[a-z]+_[a-z]+\.csv/)
+}
+
+csv_stats
+    .map { file -> tuple(csv_prefix(file.name), file) }
+    .groupTuple()
+    .set { grouped_csvs }
+
+process recombine_csvs {
+    cache 'lenient'
+    module 'java/latest:modules:modules-init:modules-gs:python/3.6.4'
+    publishDir  path: "${params.output_dir}/demux_out/", pattern: "*.csv", mode: 'copy'
+
+    input:
+        set prefix, file(all_csvs) from grouped_csvs
+
+    output:
+        file "*.csv" into all_csv
+
+    """
+    csvs="$all_csvs"    
+    arr=(\$csvs)
+    if [ "$params.level" = "3" ]; then
+        cat \$(IFS=\$'\n'; echo "\${arr[*]}" | grep lig_counts) | awk -F ',' 'BEGIN {OFS = ","} {a[\$1] += \$2} END {for (i in a) print i, a[i]}' > ${prefix}.lig_counts.csv    
+    fi
+    cat \$(IFS=\$'\n'; echo "\${arr[*]}" | grep rt_counts) | awk -F ',' 'BEGIN {OFS = ","} {a[\$1] += \$2} END {for (i in a) print i, a[i]}' > ${prefix}.rt_counts.csv
+    cat \$(IFS=\$'\n'; echo "\${arr[*]}" | grep pcr_counts) | awk -F ',' 'BEGIN {OFS = ","; SUBSEP = OFS = FS} {a[\$1,\$2] += \$3} END {for (i in a) print i, a[i]}' > ${prefix}.pcr_counts.csv
+
+    """
+}
+
+json_prefix = { fname ->
+    (fname - ~/_R1_001\.[0-9]+\.fastq\.stats\.json/)
+}
+
+json_stats
+    .map { file -> tuple(json_prefix(file.name), file) }
+    .groupTuple()
+    .set { grouped_jsons }
+
+process recombine_jsons {
+    cache 'lenient'
+    module 'java/latest:modules:modules-init:modules-gs:python/3.6.4'
+    publishDir  path: "${params.output_dir}/demux_out/", pattern: "*.json", mode: 'copy'
+
+    input:
+        set prefix, file(all_jsons) from grouped_jsons
+
+    output:
+        file "*.json" into all_json
+
+    """
+#!/usr/bin/env python
+import json
+import glob
+import os
+from collections import OrderedDict
+
+if $params.level == 3:
+    total_input_reads = 0
+    total_passed_reads = 0
+    total_uncorrected = 0
+    total_ambiguous_ligation_length = 0
+    total_unused_rt_well = 0
+    total_pcr_mismatch = 0
+    total_corrected_9 = 0
+    total_corrected_10 = 0
+    sample_read_counts = {}
+
+    for file_name in glob.glob("*.json"):
+        with open (file_name, "r") as read_file:
+            data = json.load(read_file)
+        total_input_reads += data['total_input_reads']
+        total_passed_reads += data['total_passed_reads']
+        total_uncorrected += (data['fraction_uncorrected_reads'] * data['total_input_reads'])
+        total_ambiguous_ligation_length += (data['fraction_ambiguous_ligation_length'] * data['total_input_reads'])
+        total_unused_rt_well += (data['fraction_invalid_rt_well'] * data['total_input_reads'])
+        total_pcr_mismatch += (data['fraction_pcr_mismatch'] * data['total_input_reads'])
+        total_corrected_9 += data['total_reads_corrected_when_9bp_ligation'] 
+        total_corrected_10 += data['total_reads_corrected_when_10bp_ligation']
+        sample_read_counts = { k: sample_read_counts.get(k, 0) + data['total_reads_passed_per_sample'].get(k, 0) for k in set(sample_read_counts) | set(data['total_reads_passed_per_sample']) }
+
+    stats = OrderedDict()
+    stats['total_input_reads'] = total_input_reads
+    stats['total_passed_reads'] = total_passed_reads
+    stats['fraction_passed_reads'] = total_passed_reads / total_input_reads
+    stats['fraction_uncorrected_reads'] = total_uncorrected / total_input_reads
+    stats['fraction_ambiguous_ligation_length'] = total_ambiguous_ligation_length / total_input_reads
+    stats['fraction_invalid_rt_well'] = total_unused_rt_well / total_input_reads
+    stats['fraction_pcr_mismatch'] = total_pcr_mismatch / total_input_reads
+    stats['total_reads_corrected_when_9bp_ligation'] = total_corrected_9
+    stats['total_reads_corrected_when_10bp_ligation'] = total_corrected_10
+    stats['total_reads_passed_per_sample'] = sample_read_counts
+
+if $params.level == 2:
+    total_input_reads = 0
+    total_passed_reads = 0
+    total_uncorrected = 0
+    total_ambiguous_ligation_length = 0
+    total_unused_rt_well = 0
+    total_pcr_mismatch = 0
+    total_corrected = 0
+    sample_read_counts = {}
+
+    for file_name in glob.glob("*.json"):
+        with open (file_name, "r") as read_file:
+            data = json.load(read_file)
+        total_input_reads += data['total_input_reads']
+        total_passed_reads += data['total_passed_reads']
+        total_uncorrected += (data['fraction_uncorrected_reads'] * data['total_input_reads'])
+        total_ambiguous_ligation_length += (data['fraction_ambiguous_ligation_length'] * data['total_input_reads'])
+        total_unused_rt_well += (data['fraction_invalid_rt_well'] * data['total_input_reads'])
+        total_pcr_mismatch += (data['fraction_pcr_mismatch'] * data['total_input_reads'])
+        total_corrected += data['total_reads_corrected'] 
+        sample_read_counts = { k: sample_read_counts.get(k, 0) + data['total_reads_passed_per_sample'].get(k, 0) for k in set(sample_read_counts) | set(data['total_reads_passed_per_sample']) }
+
+    stats = OrderedDict()
+    stats['total_input_reads'] = total_input_reads
+    stats['total_passed_reads'] = total_passed_reads
+    stats['fraction_passed_reads'] = total_passed_reads / total_input_reads
+    stats['fraction_uncorrected_reads'] = total_uncorrected / total_input_reads
+    stats['fraction_invalid_rt_well'] = total_unused_rt_well / total_input_reads
+    stats['fraction_pcr_mismatch'] = total_pcr_mismatch / total_input_reads
+    stats['total_reads_corrected'] = total_corrected
+    stats['total_reads_passed_per_sample'] = sample_read_counts
+
+with open("${prefix}.stats.json", 'w') as f:
+    f.write(json.dumps(stats, indent=4))
+    """
+}
 
 process demux_dash {
     module 'java/latest:modules:modules-init:modules-gs:gcc/8.1.0:R/3.5.2'
@@ -162,7 +319,8 @@ process demux_dash {
 
 
     input:
-        file demux_stats_files from seg_output.collect()
+        file demux_stats_csvs from all_csv.collect()
+        file jsons from all_json.collect()
     output:
         file demux_dash
 

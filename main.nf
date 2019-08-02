@@ -129,7 +129,6 @@ process seg_sample_fastqs {
     cache 'lenient'
     module 'java/latest:modules:modules-init:modules-gs:python/3.6.4'
     clusterOptions "-l mfree=1G"
-    publishDir  path: "${params.output_dir}/", pattern: "demux_out/*.stats.json", mode: 'copy'
 
     input:
         set file(R1), file(R2) from fastqs.splitFastq(by: params.fastq_chunk_size, file: true, pe: true)

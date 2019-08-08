@@ -310,6 +310,7 @@ with open("${prefix}.stats.json", 'w') as f:
     """
 }
 
+project_name = params.output_dir.substring(params.output_dir.lastIndexOf("/")+1);
 process demux_dash {
     module 'java/latest:modules:modules-init:modules-gs:gcc/8.1.0:R/3.5.2'
     clusterOptions "-l mfree=8G"
@@ -328,7 +329,7 @@ process demux_dash {
     mkdir demux_dash/img
     cp $baseDir/bin/bbi_icon.png demux_dash/img/
     generate_html.R \
-        "." --p7_rows "$params.p7_rows" --p5_cols "$params.p5_cols" --level "$params.level"
+        "." --p7_rows "$params.p7_rows" --p5_cols "$params.p5_cols" --level "$params.level" --project_name "${project_name)"
 
     """
 

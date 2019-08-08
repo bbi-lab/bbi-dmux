@@ -14,6 +14,9 @@ parser$add_argument('--p5_cols', required=TRUE, help='p5 cols')
 parser$add_argument('--level', required=TRUE, help='2 or 3 level')
 args = parser$parse_args()
 
+output_folder <- args$input_folder
+project_name <- unlist(stringr::str_split(output_folder, "/"))
+project_name <- project_name[[length(project_name)]]
 
 lane_list <- gsub(".stats.json", "", list.files(args$input_folder, pattern = ".json"))
 lane_names <- gsub("L00", "Lane ", lane_list)
@@ -224,7 +227,7 @@ body <- tags$body(
             </ul>
         </div>
         <div class="mx-auto order-0">
-            <a class="navbar-brand mx-auto" href="#">Demultiplexing QC Dashboard</a>
+            <a class="navbar-brand mx-auto" href="#">'), paste('Demultiplexing', project_name, 'QC Dashboard'), HTML('</a>
         </div>
         <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
         </div>

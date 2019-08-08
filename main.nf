@@ -329,7 +329,7 @@ process demux_dash {
     mkdir demux_dash/img
     cp $baseDir/bin/bbi_icon.png demux_dash/img/
     generate_html.R \
-        "." --p7_rows "$params.p7_rows" --p5_cols "$params.p5_cols" --level "$params.level" --project_name "${project_name)"
+        "." --p7_rows "$params.p7_rows" --p5_cols "$params.p5_cols" --level "$params.level" --project_name "${project_name}"
 
     """
 

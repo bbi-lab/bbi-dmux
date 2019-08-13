@@ -289,7 +289,6 @@ if $params.level == 2:
         total_input_reads += data['total_input_reads']
         total_passed_reads += data['total_passed_reads']
         total_uncorrected += (data['fraction_uncorrected_reads'] * data['total_input_reads'])
-        total_ambiguous_ligation_length += (data['fraction_ambiguous_ligation_length'] * data['total_input_reads'])
         total_unused_rt_well += (data['fraction_invalid_rt_well'] * data['total_input_reads'])
         total_pcr_mismatch += (data['fraction_pcr_mismatch'] * data['total_input_reads'])
         total_corrected += data['total_reads_corrected'] 

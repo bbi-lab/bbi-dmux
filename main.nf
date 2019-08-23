@@ -147,7 +147,7 @@ process seg_sample_fastqs {
         --file_name $R1 --sample_layout $sample_sheet_file \
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
         --output_dir ./demux_out --level $params.level
-    gzip *.fastq
+    gzip demux_out/*.fastq
     """    
 }
 

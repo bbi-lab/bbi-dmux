@@ -136,7 +136,7 @@ process seg_sample_fastqs {
 
     output:
         file "demux_out/*" into seg_output
-        file "demux_out/*.fastq" into samp_fastqs_check mode flatten
+        file "demux_out/*.fastq.gz" into samp_fastqs_check mode flatten
         file "demux_out/*.stats.json" into json_stats mode flatten
         file "demux_out/*.csv" into csv_stats mode flatten
 
@@ -147,6 +147,7 @@ process seg_sample_fastqs {
         --file_name $R1 --sample_layout $sample_sheet_file \
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
         --output_dir ./demux_out --level $params.level
+    gzip *.fastq
     """    
 }
 
@@ -172,7 +173,7 @@ process recombine_fastqs {
         file "*.gz" into gz_fqs 
 
     """
-    cat $all_fqs | gzip  > ${prefix}.fastq.gz 
+    cat $all_fqs > ${prefix}.fastq.gz 
 
     """
        

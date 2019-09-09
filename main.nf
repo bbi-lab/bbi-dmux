@@ -96,7 +96,8 @@ process bcl2fastq {
     module 'java/latest:modules:modules-init:modules-gs:gmp/5.0.2'
     module 'mpfr/3.1.0:mpc/0.8.2:gcc/4.9.1:bcl2fastq/2.20'
 //    publishDir path: "$params.output_dir", pattern: "lane_fastqs/Undetermined_S0_*.fastq.gz", mode: 'copy'
-    clusterOptions "-pe serial $max_cores_bcl -l mfree=$bcl_mem" + "G"
+    cpus $max_cores_bcl
+    memory "$bcl_mem" + " GB"    
 
     input:
         file samp_sheet
@@ -128,7 +129,7 @@ process bcl2fastq {
 process seg_sample_fastqs {
     cache 'lenient'
     module 'java/latest:modules:modules-init:modules-gs:python/3.6.4'
-    clusterOptions "-l mfree=1G"
+    memory '1 GB'    
 
     input:
         set file(R1), file(R2) from fastqs.splitFastq(by: params.fastq_chunk_size, file: true, pe: true)
@@ -313,7 +314,7 @@ with open("${prefix}.stats.json", 'w') as f:
 project_name = params.output_dir.substring(params.output_dir.lastIndexOf("/")+1);
 process demux_dash {
     module 'java/latest:modules:modules-init:modules-gs:gcc/8.1.0:R/3.5.2'
-    clusterOptions "-l mfree=8G"
+    memory '8 GB'    
 
     publishDir path: "${params.output_dir}/", pattern: "demux_dash", mode: 'copy'
 

@@ -96,7 +96,7 @@ process bcl2fastq {
     module 'java/latest:modules:modules-init:modules-gs:gmp/5.0.2'
     module 'mpfr/3.1.0:mpc/0.8.2:gcc/4.9.1:bcl2fastq/2.20'
 //    publishDir path: "$params.output_dir", pattern: "lane_fastqs/Undetermined_S0_*.fastq.gz", mode: 'copy'
-    cpus $max_cores_bcl
+    cpus max_cores_bcl
     memory "$bcl_mem" + " GB"    
 
     input:

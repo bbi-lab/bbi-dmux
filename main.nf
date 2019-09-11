@@ -133,7 +133,7 @@ process seg_sample_fastqs {
     memory '1 GB'    
 
     input:
-        set file(R1), file(R2) from fastqs.splitFastq(by: params.fastq_chunk_size, file: true, pe: true, compress: true)
+        set file(R1), file(R2) from fastqs.splitFastq(by: params.fastq_chunk_size, file: true, pe: true)
         file sample_sheet_file
 
     output:

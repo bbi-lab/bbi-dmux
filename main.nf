@@ -145,7 +145,7 @@ process seg_sample_fastqs {
     """
     mkdir demux_out
     make_sample_fastqs.py --run_directory $params.run_dir \
-        --read1 <(zcat $R1) --read2 <(zcat $R2) \
+        --read1 $R1 --read2 $R2 \
         --file_name $R1 --sample_layout $sample_sheet_file \
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
         --output_dir ./demux_out --level $params.level

@@ -174,6 +174,12 @@ def get_run_info(flow_cell_path):
 
     return run_stats
 
+def write_to_undetermined(entry):
+    output_name = entry['r1_name'] + "|" + entry['r1_seq']
+    r2_seq = entry['r2_seq']
+    r2_qual = entry['r2_qual']
+    output_line = f'{output_name}\n{r2_seq}\n+\n{r2_qual}\n'
+    undetermined.write(output_line)
 
 if __name__ == '__main__':
 
@@ -300,7 +306,7 @@ if __name__ == '__main__':
 
   # Set up the output files
     sample_rt_lookup = load_sample_layout(args.sample_layout)
-    
+    undetermined = open(os.path.join(args.output_dir, '%s-%s' % ("Undetermined", suffix)), 'w')
     sample_to_output_filename_lookup = {sample: os.path.join(args.output_dir, '%s-%s' % (sample, suffix)) for well,sample in sample_rt_lookup.items()}
     sample_to_output_file_lookup = {sample: open(filename, 'w') for sample,filename in sample_to_output_filename_lookup.items()}
     print("Demuxing %s samples (%s total RT wells) into their own files..." % (len(sample_to_output_filename_lookup), len(sample_rt_lookup)))
@@ -342,6 +348,7 @@ if __name__ == '__main__':
 
             if corrected_9 and corrected_10:
                 total_ambiguous_ligation_length += 1
+                write_to_undetermined(entry)
                 continue
 
             if corrected_9 and corrected_p5_p7:
@@ -356,14 +363,17 @@ if __name__ == '__main__':
                 umi = entry['umi_10']
             else:
                 total_uncorrected += 1
+                write_to_undetermined(entry)
                 continue
 
             if not (p5, p7) in programmed_pcr_combos:
                 total_pcr_mismatch += 1
+                write_to_undetermined(entry)
                 continue
 
             if rt_barcode not in sample_rt_lookup:
                 total_unused_rt_well += 1
+                write_to_undetermined(entry)
                 continue
 
             sample = sample_rt_lookup[rt_barcode]
@@ -389,6 +399,7 @@ if __name__ == '__main__':
         # Close output files
         for f in sample_to_output_file_lookup.values():
             f.close()
+        undetermined.close()
 
         # Output stats
         total_passed_reads = sum(list(sample_read_counts.values()))
@@ -441,14 +452,17 @@ if __name__ == '__main__':
                 umi = entry['umi']
             else:
                 total_uncorrected += 1
+                write_to_undetermined(entry)
                 continue
 
             if not (p5, p7) in programmed_pcr_combos:
                 total_pcr_mismatch += 1
+                write_to_undetermined(entry)
                 continue
 
             if rt_barcode not in sample_rt_lookup:
                 total_unused_rt_well += 1
+                write_to_undetermined(entry)
                 continue
 
             sample = sample_rt_lookup[rt_barcode]
@@ -469,6 +483,7 @@ if __name__ == '__main__':
         # Close output files
         for f in sample_to_output_file_lookup.values():
             f.close()
+        undetermined.close()
 
         # Output stats
         total_passed_reads = sum(list(sample_read_counts.values()))

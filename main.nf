@@ -4,6 +4,7 @@ params.help = false
 params.rerun = false
 params.star_file = "$baseDir/bin/star_file.txt"
 params.level = 3
+params.bcl_max_mem = 40
 params.fastq_chunk_size = 100000000
 //print usage
 if (params.help) {
@@ -36,6 +37,7 @@ if (params.help) {
     log.info '    params.rerun = [sample1, sample2]          Add to only rerun certain samples from trimming on.'
     log.info '    params.star_file = PATH/TO/FILE            File with the genome to star maps, similar to the one included with the package.'
     log.info '    params.fastq_chunk_size = 100000000        The number of reads that should be processed together for demultiplexing.'
+    log.info '    params.bcl_max_mem = 40                    The maximum number of GB of RAM to assign for bcl2fastq'
     log.info ''
     log.info 'Issues? Contact hpliner@uw.edu'
     exit 1
@@ -85,10 +87,10 @@ process make_sample_sheet {
 
 if (params.max_cores > 16) {
     max_cores_bcl = 16
-    bcl_mem = 2.5
+    bcl_mem = params.bcl_max_mem/16
 } else {
     max_cores_bcl = params.max_cores
-    bcl_mem = 40/max_cores_bcl
+    bcl_mem = params.bcl_max_mem/max_cores_bcl
 }
 
 process bcl2fastq {

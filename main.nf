@@ -154,7 +154,7 @@ process seg_sample_fastqs {
 }
 
 get_prefix = { fname ->
-    (fname - ~/_R1_001\.[0-9]+\.fastq.fastq/)
+    (fname - ~/_R1_001\.[0-9]+\.fastq.fastq.gz/)
 }
 
 samp_fastqs_check

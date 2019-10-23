@@ -23,8 +23,21 @@ lane_nums <- gsub("L00", "", lane_list)
 p7_rows <- unlist(stringr::str_split(args$p7_rows, " "))
 p5_cols <- unlist(stringr::str_split(args$p5_cols, " "))
 
-samp <- read.table(args$sample_sheet)
+samp <- read.csv(args$sample_sheet, header = T)
 
+
+if(length(samp$Sample.ID == "Sentinel") > 0) {
+    sent_barcs <- as.character(samp[samp$Sample.ID == "Sentinel",]$RT.Barcode)
+} else {
+    sent_barcs <- NULL
+}
+if(length(samp$Sample.ID == "Barnyard") > 0) {
+    barn_barcs <- as.character(samp[samp$Sample.ID == "Barnyard",]$RT.Barcode)
+} else {
+    barn_barcs <- NULL
+}
+barn_norm_pics <- c()
+sent_norm_pics <- c()
 for (lane in lane_list) {
   rows <- c("A", "B", "C", "D", "E", "F", "G", "H")
   cols <- 1:12
@@ -44,7 +57,38 @@ for (lane in lane_list) {
     data <- merge(plate, rt_df, by.x=c("Var1", "Var2"),
                   by.y=c("cols", "rows"), all.x=T)
     data$ReadCount[is.na(data$ReadCount)] <- 0
-    
+    sent_norm <- NULL
+    if (!is.null(sent_barcs)) {
+        if (any(sent_barcs %in% sub_df$V1)) {
+            sent_norm <- mean(sub_df[sub_df$V1 %in% sent_barcs,]$V2)
+        } 
+    }
+    barn_norm <- NULL
+    if (!is.null(barn_barcs)) {    
+        if (any(barn_barcs %in% sub_df$V1)) {
+            barn_norm <- mean(sub_df[sub_df$V1 %in% barn_barcs,]$V2)
+        }
+    }
+
+   if (!is.null(sent_norm)) {
+    png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate_sent_norm.png"), width = 6, height = 4, res = 200, units = "in")
+    print(ggplot(aes(as.factor(Var1), Var2, fill = log2(ReadCount/sent_norm)), data = data) +
+            geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
+            scale_fill_gradient2(name = "log2 norm value", low = "red", mid="white", high = "blue"))
+    dev.off()
+
+   sent_norm_pics <- c(sent_norm_pics, paste0("demux_dash/img/", lane, "_", p, ".rt_plate_sent_norm.png"))
+   }
+   if (!is.null(barn_norm)) {
+    png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate_barn_norm.png"), width = 6, height = 4, res = 200, units = "in")
+    print(ggplot(aes(as.factor(Var1), Var2, fill = log2(ReadCount/barn_norm)), data = data) +
+            geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
+            scale_fill_gradient2(name = "log2 norm value", low = "red", mid="white", high = "blue"))
+    dev.off()
+    barn_norm_pics <- c(barn_norm_pics, paste0("demux_dash/img/", lane, "_", p, ".rt_plate_barn_norm.png"))
+   }
+
+ 
     png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate.png"), width = 6, height = 4, res = 200, units = "in")
     print(ggplot(aes(as.factor(Var1), Var2, fill = ReadCount), data = data) +
             geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
@@ -333,7 +377,23 @@ body <- tags$body(
                       tags$img(src=paste0("img/L00", num, "_", p, ".rt_plate.png"), 
                                width = "50%",
                                class="rounded mx-auto d-block",
+                               alt="..."), 
+                      if(paste0("demux_dash/img/L00", num, "_", p, ".rt_plate_sent_norm.png") %in% sent_norm_pics) {
+                          list(tags$h5("Sentinel Normalized"),
+                          tags$img(src=paste0("img/L00", num, "_", p, ".rt_plate_sent_norm.png"),
+                               width = "50%",
+                               class="rounded mx-auto d-block",
                                alt="..."))
+                      }, 
+                      if(paste0("demux_dash/img/L00", num, "_", p, ".rt_plate_barn_norm.png") %in% barn_norm_pics) {
+                          list(tags$h5("Barnyard Normalized"),
+                          tags$img(src=paste0("img/L00", num, "_", p, ".rt_plate_barn_norm.png"),
+                               width = "50%",
+                               class="rounded mx-auto d-block",
+                               alt="..."))
+                      }
+
+                 )
                })))
       
     }),

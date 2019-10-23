@@ -13,6 +13,7 @@ parser$add_argument('--p7_rows', required=TRUE, help='p7 rows')
 parser$add_argument('--p5_cols', required=TRUE, help='p5 cols')
 parser$add_argument('--level', required=TRUE, help='2 or 3 level')
 parser$add_argument('--project_name', required=TRUE, help='Name of the project')
+parser$add_argument('--sample_sheet', required=TRUE, help='sample_sheet')
 args = parser$parse_args()
 
 lane_list <- gsub(".stats.json", "", list.files(args$input_folder, pattern = ".json"))
@@ -22,6 +23,7 @@ lane_nums <- gsub("L00", "", lane_list)
 p7_rows <- unlist(stringr::str_split(args$p7_rows, " "))
 p5_cols <- unlist(stringr::str_split(args$p5_cols, " "))
 
+samp <- read.table(args$sample_sheet)
 
 for (lane in lane_list) {
   rows <- c("A", "B", "C", "D", "E", "F", "G", "H")

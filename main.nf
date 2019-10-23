@@ -67,6 +67,7 @@ process check_sample_sheet {
 }
 
 sample_sheet_file = good_sample_sheet
+sample_sheet_file2 = good_sample_sheet
 
 process make_sample_sheet {
     cache 'lenient'
@@ -325,6 +326,7 @@ process demux_dash {
     input:
         file demux_stats_csvs from all_csv.collect()
         file jsons from all_json.collect()
+        file sample_sheet_file2
     output:
         file demux_dash
 
@@ -333,7 +335,7 @@ process demux_dash {
     mkdir demux_dash/img
     cp $baseDir/bin/bbi_icon.png demux_dash/img/
     generate_html.R \
-        "." --p7_rows "$params.p7_rows" --p5_cols "$params.p5_cols" --level "$params.level" --project_name "${project_name}"
+        "." --p7_rows "$params.p7_rows" --p5_cols "$params.p5_cols" --level "$params.level" --project_name "${project_name}" --sample_sheet "$sample_sheet_file2"
 
     """
 

@@ -57,10 +57,10 @@ Then, install monocle3 by running:
 
 ```
 module load gcc/8.1.0
-module load R/3.5.2
+module load R/3.6.1
 R
 ```
-Then from within R, follow the installation instructions on the [monocle3 website](https://cole-trapnell-lab.github.io/monocle3/monocle3_docs/#installing-monocle-3).
+Then from within R, follow the installation instructions on the [monocle3 website](https://cole-trapnell-lab.github.io/monocle3/).
 
 Once monocle3 is installed, install nextflow by typing:
 
@@ -144,3 +144,6 @@ Warning: After you delete the work folder, -resume will no longer restart from t
 
 #### Questions and errors:
 If you run into problems, please leave a detailed description in the issue tab above!
+
+### Acknowledgements
+Many members of the Shendure and Trapnell labs as well as the BBI team have worked on portions of this pipeline or its predecessors, especially Andrew Hill and Jonathan Packer.

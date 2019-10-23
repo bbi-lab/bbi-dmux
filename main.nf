@@ -317,7 +317,7 @@ with open("${prefix}.stats.json", 'w') as f:
 
 project_name = params.output_dir.substring(params.output_dir.lastIndexOf("/")+1);
 process demux_dash {
-    module 'java/latest:modules:modules-init:modules-gs:gcc/8.1.0:R/3.5.2'
+    module 'java/latest:modules:modules-init:modules-gs:gcc/8.1.0:R/3.6.1'
     memory '8 GB'    
 
     publishDir path: "${params.output_dir}/", pattern: "demux_dash", mode: 'copy'

@@ -14,10 +14,20 @@ RT_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/rt2.txt')
 LIG_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/ligation.txt')
 RT3_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/rt.txt')
 
+NEXTSEQ = 'NextSeq'
+MISEQ = 'MiSeq'
+NOVASEQ = 'NovaSeq'
+HISEQ4000 = 'HiSeq4000'
+HISEQ3000 = 'HiSeq3000'
+HISEQ = 'HiSeq'
+UNKNOWN_SEQUENCER = 'unknown'
+
 SEQUENCERS_P5_RC_MAP = {
-    'NextSeq': True,
-    'MiSeq': False,
-    'NovaSeq': False,
+    NEXTSEQ: True,
+    MISEQ: False,
+    NOVASEQ: False,
+    HISEQ4000: True,
+    HISEQ3000: False
 }
 
 def get_programmed_pcr_combos(p5_lookup, p7_lookup, p5_cols_used, p7_rows_used):

@@ -253,6 +253,68 @@ def make_undetermined_dict_2lvl(read_file, out_file):
     fo.close()
     return pcr_combo_dict
 
+# Taken from barcodeutils, but excluding what's not needed and not always found
+def get_run_info(flow_cell_path):
+    """
+    Helper function to get some info about the sequencing runs.
+    Args:
+        flow_cell_path (str): Path to BCL directory for run.
+    Returns:
+        dict: basic statistics about run, like date, instrument, number of lanes, flowcell ID, read lengths, etc.
+    """
+    run_stats = {}
+
+    bcl_run_info = os.path.join(flow_cell_path, 'RunParameters.xml*')
+    bcl_run_info = glob.glob(bcl_run_info)
+    if not bcl_run_info:
+        raise ValueError('BCL RunParameters.xml not found for specified flowcell: %s' % bcl_run_info)
+    else:
+        bcl_run_info = bcl_run_info[0]
+
+    # Set up a few nodes for parsing
+    tree = ET.parse(bu.open_file(bcl_run_info))
+
+    setup_node = tree.getroot().find("Setup")
+    if setup_node is None:
+        setup_node = tree.getroot()
+
+    # Figure out instrument
+    application = setup_node.find('ApplicationName')
+    if application is None:
+        application = setup_node.find('Application')
+
+    application = application.text
+    application_version = setup_node.find('ApplicationVersion')
+    if NEXTSEQ in application:
+        run_stats['instrument_type'] = NEXTSEQ
+    elif MISEQ in application:
+        run_stats['instrument_type'] = MISEQ
+    elif NOVASEQ in application:
+        run_stats['instrument_type'] = NOVASEQ
+    elif HISEQ in application:
+        app_string = re.search(r'[\d\.]+', application_version).group()
+        app_major_version = int(app_string.split('.')[0])
+
+        if app_major_version > 2:
+            run_stats['instrument_type'] = HISEQ4000
+        else:
+            run_stats['instrument_type'] = HISEQ3000
+    else:
+        run_stats['instrument_type'] = UNKNOWN_SEQUENCER
+
+    run_start_date_node = tree.getroot().find('RunStartDate')
+
+    # Now actually populate various stats
+    run_stats['date'] = run_start_date_node.text
+
+    if run_stats['instrument_type'] == NOVASEQ:
+        run_stats['p7_index_length'] = int(setup_node.find('PlannedIndex1ReadCycles').text)
+        run_stats['p5_index_length'] = int(setup_node.find('PlannedIndex2ReadCycles').text)
+    else:
+        run_stats['p7_index_length'] = int(setup_node.find('Index1Read').text)
+        run_stats['p5_index_length'] = int(setup_node.find('Index2Read').text)
+
+    return run_stats
 
 
 # Taken from barcodeutils, but excluding what's not needed and not always found

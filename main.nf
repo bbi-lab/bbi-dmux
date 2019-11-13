@@ -357,7 +357,7 @@ process run_recovery {
     publishDir path: "${params.output_dir}/", pattern: "recovery_output", mode: 'move'
 
     input:
-        file demux_out/Undetermined* as input
+        file input from Channel.fromPath("${params.demux_out}/Undetermined.*")
 
     output:
         file recovery_output

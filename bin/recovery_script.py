@@ -4,6 +4,7 @@ from Bio.SeqIO.QualityIO import FastqGeneralIterator
 import barcodeutils as bu
 import argparse
 import os
+import glob
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 P5_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/p5.txt')

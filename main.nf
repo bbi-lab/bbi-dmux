@@ -358,6 +358,7 @@ process run_recovery {
 
     input:
         file input from Channel.fromPath("${params.demux_out}/Undetermined*")
+        file sample_sheet_file3
 
     output:
         file recovery_output
@@ -369,7 +370,7 @@ process run_recovery {
     """
     mkdir recovery_output
     
-    recovery_script.py --input_file <(zcat $input) --output_file ${input_file}.txt \
+    recovery_script.py --input_file <(zcat $input) --output_file ${input}.txt \
         --run_directory $params.run_dir \
         --sample_layout $sample_sheet_file3 \
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \

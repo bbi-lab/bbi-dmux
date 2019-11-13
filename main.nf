@@ -6,6 +6,7 @@ params.star_file = "$baseDir/bin/star_file.txt"
 params.level = 3
 params.bcl_max_mem = 40
 params.fastq_chunk_size = 100000000
+params.run_recovery = false
 //print usage
 if (params.help) {
     log.info ''
@@ -38,6 +39,7 @@ if (params.help) {
     log.info '    params.star_file = PATH/TO/FILE            File with the genome to star maps, similar to the one included with the package.'
     log.info '    params.fastq_chunk_size = 100000000        The number of reads that should be processed together for demultiplexing.'
     log.info '    params.bcl_max_mem = 40                    The maximum number of GB of RAM to assign for bcl2fastq'
+    log.info '    --run_recovery true                        Add this to run the recovery script AFTER running the normal pipeline.'
     log.info ''
     log.info 'Issues? Contact hpliner@uw.edu'
     exit 1
@@ -68,6 +70,7 @@ process check_sample_sheet {
 
 sample_sheet_file = good_sample_sheet
 sample_sheet_file2 = good_sample_sheet
+sample_sheet_file3 = good_sample_sheet
 
 process make_sample_sheet {
     cache 'lenient'
@@ -79,6 +82,9 @@ process make_sample_sheet {
 
     output:
         file "SampleSheet.csv" into samp_sheet
+
+    when:
+        !params.run_recovery
 
     """
     make_sample_sheet.py --run_directory $params.run_dir
@@ -342,3 +348,43 @@ process demux_dash {
 
 
 }
+
+
+process run_recovery {
+    module 'modules:java/latest:modules-init:modules-gs:python/3.6.4'
+    memory '4 GB'
+
+    publishDir path: "${params.output_dir}/", pattern: "recovery_output", mode: 'move'
+
+    input:
+        file demux_out/Undetermined* as input
+
+    output:
+        file recovery_output
+
+    when:
+        params.run_recovery
+
+
+    """
+    mkdir recovery_output
+    
+    recovery_script.py --input_file <(zcat $input) --output_file ${input_file}.txt \ 
+        --run_directory $params.run_dir \
+        --sample_layout $sample_sheet_file3 \
+        --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
+        --level $params.level
+
+
+
+
+    """
+
+
+
+}
+
+
+
+
+

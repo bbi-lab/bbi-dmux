@@ -349,12 +349,13 @@ process demux_dash {
 
 }
 
+save_recovery = {params.output_dir + "/recovery_output/" +  it - ~/.fastq.gz.txt/ + "recovery_table.txt"}
 
 process run_recovery {
     module 'modules:java/latest:modules-init:modules-gs:python/3.6.4'
     memory '4 GB'
 
-    publishDir path: "${params.output_dir}/", pattern: "recovery_output", mode: 'move'
+    publishDir path: "${params.output_dir}/recovery_output", saveAs: save_recovery, pattern: "*.txt", mode: 'move'
 
     input:
         file input from Channel.fromPath("${params.demux_out}/Undetermined*")
@@ -368,7 +369,6 @@ process run_recovery {
 
 
     """
-    mkdir recovery_output
     
     recovery_script.py --input_file <(zcat $input) --output_file ${input}.txt \
         --run_directory $params.run_dir \

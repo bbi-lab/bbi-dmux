@@ -362,7 +362,7 @@ process run_recovery {
         file sample_sheet_file3
 
     output:
-        file recovery_output
+        file" *.txt"
 
     when:
         params.run_recovery

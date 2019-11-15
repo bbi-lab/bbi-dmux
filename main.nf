@@ -349,7 +349,7 @@ process demux_dash {
 
 }
 
-save_recovery = {params.output_dir + "/recovery_output/" +  it - ~/.fastq.gz.txt/ + "recovery_table.txt"}
+save_recovery = {params.output_dir + "/recovery_output/" +  it - ~/.fastq.gz.txt/ + "-recovery_table.txt"}
 
 process run_recovery {
     module 'modules:java/latest:modules-init:modules-gs:python/3.6.4'

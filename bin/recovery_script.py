@@ -6,6 +6,7 @@ import argparse
 import os
 import glob
 import xml.etree.ElementTree as ET
+import operator
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 P5_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/p5.txt')
@@ -75,10 +76,14 @@ def load_sample_layout(file_path):
 
 
 def make_undetermined_dict_3lvl(read_file, out_file):
+    bad_rt_dict = dict()
+    bad_lig_dict = dict()
+    not_in_samp_dict = dict()
     read_result = []
     pcr_combo_dict = dict()
     fo = open(out_file, "w")
     fo.write("read_type\trt_9_result\trt_9_value\trt_10_result\trt_10_value\tsample_assign_9\tsample_assign_10\tlig_9_result\tlig_9_value\tlig_10_result\tlig_10_value\tp5_result\tp7_result\tumi_9_value\tumi_10_value\tpcr_result\n")
+    sum_dict = {'total_reads':0, 'amb_length':0, 'multi_wrong':0, 'bad_lig':0, 'bad_rt':0, 'pcr_mismatch':0, 'bad_pcr_comp':0, 'not_in_samp':0, 'unassigned':0}
 
     with open(read_file, 'rt') as f:
         ct = 0
@@ -197,7 +202,111 @@ def make_undetermined_dict_3lvl(read_file, out_file):
             read_res['sample_assign_9'],read_res['sample_assign_10'],read_res['lig_9_result'],read_res['lig_9_value'],\
             read_res['lig_10_result'],read_res['lig_10_value'],read_res['p5_result'],read_res['p7_result'],\
             read_res['umi_9_value'],read_res['umi_10_value'],read_res['pcr_result']))
-    fo.close()
+            sum_dict['total_reads'] += 1
+            if read_res['read_type'] == "Unknown" or read_res['read_type'] == "Ambiguous":
+                sum_dict['amb_length'] += 1
+            else:
+                if read_res['read_type'] == 9:
+                    if ((read_res['rt_9_result'] != 'OK') + (read_res['lig_9_result'] != 'OK') + (read_res['pcr_result'] != 'OK')) > 1:
+                        sum_dict['multi_wrong'] += 1
+                    elif read_res['lig_9_result'] != 'OK':
+                        sum_dict['bad_lig'] += 1
+                        if read_res['lig_9_value'] in bad_lig_dict.keys():
+                            bad_lig_dict[read_res['lig_9_value']] += 1
+                        else:
+                            bad_lig_dict[read_res['lig_9_value']] = 1
+                    elif read_res['rt_9_result'] != 'OK':
+                        sum_dict['bad_rt'] += 1
+                        if read_res['rt_9_value'] in bad_rt_dict.keys():
+                            bad_rt_dict[read_res['rt_9_value']] += 1
+                        else:
+                            bad_rt_dict[read_res['rt_9_value']] = 1
+                    elif read_res['pcr_result'] == "Barcode mismatch":
+                        sum_dict['pcr_mismatch'] += 1
+                    elif read_res['pcr_result'] == "Bad component":
+                        sum_dict['bad_pcr_comp'] += 1
+                    elif read_res['pcr_result'] == "OK" and read_res["sample_assign_9"] == "Unknown":
+                        sum_dict['not_in_samp'] += 1
+                        if read_res['rt_9_value'] in not_in_samp_dict.keys():
+                            not_in_samp_dict[read_res['rt_9_value']] += 1
+                        else:
+                            not_in_samp_dict[read_res['rt_9_value']] = 1
+                    else:
+                        sum_dict['unassigned'] += 1
+                if read_res['read_type'] == 10:
+                    if ((read_res['rt_10_result'] != 'OK') + (read_res['lig_10_result'] != 'OK') + (read_res['pcr_result'] != 'OK')) > 1:
+                        sum_dict['multi_wrong'] += 1
+                    elif read_res['lig_10_result'] != 'OK':
+                        sum_dict['bad_lig'] += 1
+                        if read_res['lig_10_value'] in bad_lig_dict.keys():
+                            bad_lig_dict[read_res['lig_10_value']] += 1
+                        else:
+                            bad_lig_dict[read_res['lig_10_value']] = 1
+                    elif read_res['rt_10_result'] != 'OK':
+                        sum_dict['bad_rt'] += 1
+                        if read_res['rt_10_value'] in bad_rt_dict.keys():
+                            bad_rt_dict[read_res['rt_10_value']] += 1
+                        else:
+                            bad_rt_dict[read_res['rt_10_value']] = 1
+                    elif read_res['pcr_result'] == "Barcode mismatch":
+                        sum_dict['pcr_mismatch'] += 1
+                    elif read_res['pcr_result'] == "Bad component":
+                        sum_dict['bad_pcr_comp'] += 1
+                    elif read_res['pcr_result'] == "OK" and read_res["sample_assign_10"] == "Unknown":
+                        sum_dict['not_in_samp'] += 1
+                        if read_res['rt_10_value'] in not_in_samp_dict.keys():
+                            not_in_samp_dict[read_res['rt_10_value']] += 1
+                        else:
+                            not_in_samp_dict[read_res['rt_10_value']] = 1
+                    else:
+                        sum_dict['unassigned'] += 1
+
+
+    all_reads = sum_dict["bad_lig"] + sum_dict["amb_length"] + sum_dict["bad_rt"] + sum_dict["bad_pcr_comp"] + sum_dict["pcr_mismatch"] + sum_dict["multi_wrong"] + sum_dict["not_in_samp"] + sum_dict["unassigned"]
+    out2 = out_file.replace(".txt", "-summary.txt")
+    sf = open(out2, "w")
+    sf.write("Read Recovery Summary File\n\n")
+
+    rows = [(" ", "Count", "Percentage", "\n"),\
+            ("Ambiguous length lig:", str(sum_dict["amb_length"]), str(round((sum_dict["amb_length"]*100.0)/sum_dict["total_reads"], 2)), "\n"),\
+            ("Bad ligation barcode:", str(sum_dict["bad_lig"]), str(round((sum_dict["bad_lig"]*100.0)/sum_dict["total_reads"], 2)), "\n"),\
+            ("Bad RT barcode:", str(sum_dict["bad_rt"]), str(round((sum_dict["bad_rt"]*100.0)/sum_dict["total_reads"], 2)), "\n"),\
+            ("Bad PCR component:", str(sum_dict["bad_pcr_comp"]), str(round((sum_dict["bad_pcr_comp"]*100.0)/sum_dict["total_reads"], 2)), "\n"),\
+            ("PCR mismatch:", str(sum_dict["pcr_mismatch"]), str(round((sum_dict["pcr_mismatch"]*100.0)/sum_dict["total_reads"], 2)), "\n"),\
+            ("Garbage reads*:", str(sum_dict["multi_wrong"]), str(round((sum_dict["multi_wrong"]*100.0)/sum_dict["total_reads"], 2)), "\n"),\
+            ("RT not in sample sheet:", str(sum_dict["not_in_samp"]), str(round((sum_dict["not_in_samp"]*100.0)/sum_dict["total_reads"], 2)), "\n"),\
+            ("Unassigned issue:", str(sum_dict["unassigned"]), str(round((sum_dict["unassigned"]*100.0)/sum_dict["total_reads"], 2)), "\n"),\
+            ("Total:", str(all_reads), str(round((all_reads*100.0)/sum_dict["total_reads"], 2)), "\n")]
+    
+    cols = zip(*rows)
+    col_widths = [ max(len(value) for value in col) for col in cols ]
+    format = ' '.join(['%%%ds' % width for width in col_widths ])
+    for row in rows:
+        sf.write(format % tuple(row))
+
+    sf.write("\n\n* Garbage reads have multiple problems\n\n")
+
+    sf.write("\n\nThe top RT barcodes not in the sample sheet are:\n")
+    sorted_notrt = sorted(not_in_samp_dict.items(), key=operator.itemgetter(1), reverse=True)
+    for item in sorted_notrt[:20]:
+        sf.write('{}    {}\n'.format(item[0],item[1]))
+
+    sf.write("\n\nThe top bad RT barcodes are:\n")
+    sorted_rt = sorted(bad_rt_dict.items(), key=operator.itemgetter(1), reverse=True)
+    for item in sorted_rt[:20]:
+        sf.write('{}    {}\n'.format(item[0],item[1]))
+
+    sf.write("\n\nThe top bad ligation barcodes are:\n")
+    sorted_lig = sorted(bad_lig_dict.items(), key=operator.itemgetter(1), reverse=True)
+    for item in sorted_lig[:20]:
+        sf.write('{}    {}\n'.format(item[0],item[1]))
+
+    sf.write("\n\nThe top bad pcr combos are:\n")
+    sorted_pcr = sorted(pcr_combo_dict.items(), key=operator.itemgetter(1), reverse=True)
+    for item in sorted_pcr[:20]:
+        sf.write('{}    {}\n'.format(item[0],item[1]))
+
+    sf.close()
     return pcr_combo_dict
 
 def make_undetermined_dict_2lvl(read_file, out_file):

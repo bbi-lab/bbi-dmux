@@ -356,7 +356,7 @@ process run_recovery {
     memory '4 GB'
 
     publishDir path: "${params.output_dir}/recovery_output", saveAs: save_recovery, pattern: "*.gz.txt", mode: 'move'
-    publishDir path: "${params.output_dir}/recovery_output", saveAs: save_recovery2, pattern: "-summary*.txt", mode: 'move'
+    publishDir path: "${params.output_dir}/recovery_output", saveAs: save_recovery2, pattern: "*-summary.txt", mode: 'move'
     input:
         file input from Channel.fromPath("${params.demux_out}/Undetermined*")
         file sample_sheet_file3

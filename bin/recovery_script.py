@@ -372,7 +372,7 @@ def make_undetermined_dict_2lvl(read_file, out_file):
             r2 = f.readline()
             r3 = f.readline()
             r4 = f.readline()
-            fo.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(read_res['rt_result'],\
+            fo.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(read_res['rt_result'],\
             read_res['rt_value'],read_res['sample_assign_9'],read_res['p5_result'],read_res['p7_result'],\
             read_res['umi_value'],read_res['pcr_result']))
             sum_dict['total_reads'] += 1

@@ -133,6 +133,17 @@ or
 nextflow run bbi-sci -c experiment.config -resume
 ```
 
+#### Recovery mode:
+
+After running the dmux part of the pipeline, you will find all unassigned reads in fastq files labeled "Undetermined...". You can run bbi-dmux in 'recovery mode' to generate a table with information about why each read wasn't assigned, and a summary file with percentages. There will be a table and summary file for each lane.
+
+Run recovery mode (AFTER running bbi-dmux as above) like this:
+
+```
+nextflow run bbi-dmux --run_recovery true -c experiment.config
+```
+You should provide the same experiment.config file that you used above.
+
 #### The work folder:
 Nextflow stores all of the intermediate files in its 'work' folder, which will be in the output directory you specified. This folder can get quite large, so after the pipeline is finished, you can delete it using:
 

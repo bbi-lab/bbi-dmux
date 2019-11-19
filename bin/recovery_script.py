@@ -337,7 +337,7 @@ def make_undetermined_dict_2lvl(read_file, out_file):
                 read_res["rt_result"] = "OK"
                 if rt in rt2_whitelist[1].keys():
                     rt = rt2_whitelist[1][rt]
-                rt = rt3_lookup[rt]
+                rt = rt2_lookup[rt]
                 read_res["rt_value"] = rt
                 if rt in sample_rt_lookup.keys():
                     read_res["sample_assign_9"] = sample_rt_lookup[rt]
@@ -558,8 +558,8 @@ if __name__ == '__main__':
 
     programmed_pcr_combos = get_programmed_pcr_combos(p5_lookup, p7_lookup, args.p5_cols_used, args.p7_rows_used)
 
-    rt_lookup = bu.load_whitelist(RT_FILE)
-    rt2_whitelist = bu.construct_mismatch_to_whitelist_map(rt_lookup, edit_distance = 1)
+    rt2_lookup = bu.load_whitelist(RT_FILE)
+    rt2_whitelist = bu.construct_mismatch_to_whitelist_map(rt2_lookup, edit_distance = 1)
 
     rt3_lookup = bu.load_whitelist(RT3_FILE)
     rt3_whitelist = bu.construct_mismatch_to_whitelist_map(rt3_lookup, edit_distance = 1)

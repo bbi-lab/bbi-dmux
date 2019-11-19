@@ -309,11 +309,15 @@ def make_undetermined_dict_3lvl(read_file, out_file):
     sf.close()
     return pcr_combo_dict
 
+
 def make_undetermined_dict_2lvl(read_file, out_file):
+    bad_rt_dict = dict()
+    not_in_samp_dict = dict()
     read_result = []
     pcr_combo_dict = dict()
     fo = open(out_file, "w")
-    fo.write("read_type\trt_result\trt_value\tsample_assign\tp5_result\tp7_result\tumi_value\tpcr_result\n")
+    fo.write("rt_result\trt_value\tsample_assign\tp5_result\tp7_result\tumi_value\tpcr_result\n")
+    sum_dict = {'total_reads':0, 'multi_wrong':0, 'bad_rt':0, 'pcr_mismatch':0, 'bad_pcr_comp':0, 'not_in_samp':0, 'unassigned':0}
 
     with open(read_file, 'rt') as f:
         ct = 0
@@ -329,14 +333,14 @@ def make_undetermined_dict_2lvl(read_file, out_file):
             r1 = barcs.split("|")[1]
             rt = r1[8:19]
             read_res['umi_value'] = r1[0:8]
-            if rt in rt_whitelist[0].keys() or rt in rt_whitelist[1].keys():
+            if rt in rt2_whitelist[0].keys() or rt in rt2_whitelist[1].keys():
                 read_res["rt_result"] = "OK"
-                if rt in rt_whitelist[1].keys():
-                    rt = rt_whitelist[1][rt]
-                rt = rt_lookup[rt]
+                if rt in rt2_whitelist[1].keys():
+                    rt = rt2_whitelist[1][rt]
+                rt = rt3_lookup[rt]
                 read_res["rt_value"] = rt
                 if rt in sample_rt_lookup.keys():
-                    read_res["sample_assign"] = sample_rt_lookup[rt]
+                    read_res["sample_assign_9"] = sample_rt_lookup[rt]
             else:
                 read_res["rt_result"] = "Bad RT"
                 read_res["rt_value"] = rt
@@ -368,10 +372,70 @@ def make_undetermined_dict_2lvl(read_file, out_file):
             r2 = f.readline()
             r3 = f.readline()
             r4 = f.readline()
-            fo.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(read_res['rt_result'],\
-            read_res['rt_value'],read_res['sample_assign'],read_res['p5_result'],read_res['p7_result'],\
+            fo.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(read_res['rt_result'],\
+            read_res['rt_value'],read_res['sample_assign_9'],read_res['p5_result'],read_res['p7_result'],\
             read_res['umi_value'],read_res['pcr_result']))
-    fo.close()
+            sum_dict['total_reads'] += 1
+
+            if ((read_res['rt_result'] != 'OK') + (read_res['pcr_result'] != 'OK')) > 1:
+                sum_dict['multi_wrong'] += 1
+            elif read_res['rt_result'] != 'OK':
+                sum_dict['bad_rt'] += 1
+                if read_res['rt_value'] in bad_rt_dict.keys():
+                    bad_rt_dict[read_res['rt_value']] += 1
+                else:
+                    bad_rt_dict[read_res['rt_value']] = 1
+            elif read_res['pcr_result'] == "Barcode mismatch":
+                sum_dict['pcr_mismatch'] += 1
+            elif read_res['pcr_result'] == "Bad component":
+                sum_dict['bad_pcr_comp'] += 1
+            elif read_res['pcr_result'] == "OK" and read_res["sample_assign"] == "Unknown":
+                sum_dict['not_in_samp'] += 1
+                if read_res['rt_value'] in not_in_samp_dict.keys():
+                    not_in_samp_dict[read_res['rt_value']] += 1
+                else:
+                    not_in_samp_dict[read_res['rt_value']] = 1
+            else:
+                sum_dict['unassigned'] += 1
+
+    all_reads = sum_dict["bad_rt"] + sum_dict["bad_pcr_comp"] + sum_dict["pcr_mismatch"] + sum_dict["multi_wrong"] + sum_dict["not_in_samp"] + sum_dict["unassigned"]
+    out2 = out_file.replace(".txt", "-summary.txt")
+    sf = open(out2, "w")
+    sf.write("Read Recovery Summary File\n\n")
+
+    rows = [(" ", "Count", "Percentage", "\n"),\
+            ("Bad RT barcode:", str(sum_dict["bad_rt"]), str(round((sum_dict["bad_rt"]*100.0)/sum_dict["total_reads"], 2)), "\n"),\
+            ("Bad PCR component:", str(sum_dict["bad_pcr_comp"]), str(round((sum_dict["bad_pcr_comp"]*100.0)/sum_dict["total_reads"], 2)), "\n"),\
+            ("PCR mismatch:", str(sum_dict["pcr_mismatch"]), str(round((sum_dict["pcr_mismatch"]*100.0)/sum_dict["total_reads"], 2)), "\n"),\
+            ("Garbage reads*:", str(sum_dict["multi_wrong"]), str(round((sum_dict["multi_wrong"]*100.0)/sum_dict["total_reads"], 2)), "\n"),\
+            ("RT not in sample sheet:", str(sum_dict["not_in_samp"]), str(round((sum_dict["not_in_samp"]*100.0)/sum_dict["total_reads"], 2)), "\n"),\
+            ("Unassigned issue:", str(sum_dict["unassigned"]), str(round((sum_dict["unassigned"]*100.0)/sum_dict["total_reads"], 2)), "\n"),\
+            ("Total:", str(all_reads), str(round((all_reads*100.0)/sum_dict["total_reads"], 2)), "\n")]
+    
+    cols = zip(*rows)
+    col_widths = [ max(len(value) for value in col) for col in cols ]
+    format = ' '.join(['%%%ds' % width for width in col_widths ])
+    for row in rows:
+        sf.write(format % tuple(row))
+
+    sf.write("\n\n* Garbage reads have multiple problems\n\n")
+
+    sf.write("\n\nThe top RT barcodes not in the sample sheet are:\n")
+    sorted_notrt = sorted(not_in_samp_dict.items(), key=operator.itemgetter(1), reverse=True)
+    for item in sorted_notrt[:20]:
+        sf.write('{}    {}\n'.format(item[0],item[1]))
+
+    sf.write("\n\nThe top bad RT barcodes are:\n")
+    sorted_rt = sorted(bad_rt_dict.items(), key=operator.itemgetter(1), reverse=True)
+    for item in sorted_rt[:20]:
+        sf.write('{}    {}\n'.format(item[0],item[1]))
+
+    sf.write("\n\nThe top bad pcr combos are:\n")
+    sorted_pcr = sorted(pcr_combo_dict.items(), key=operator.itemgetter(1), reverse=True)
+    for item in sorted_pcr[:20]:
+        sf.write('{}    {}\n'.format(item[0],item[1]))
+
+    sf.close()
     return pcr_combo_dict
 
 # Taken from barcodeutils, but excluding what's not needed and not always found
@@ -495,7 +559,7 @@ if __name__ == '__main__':
     programmed_pcr_combos = get_programmed_pcr_combos(p5_lookup, p7_lookup, args.p5_cols_used, args.p7_rows_used)
 
     rt_lookup = bu.load_whitelist(RT_FILE)
-    rt_whitelist = bu.construct_mismatch_to_whitelist_map(rt_lookup, edit_distance = 1)
+    rt2_whitelist = bu.construct_mismatch_to_whitelist_map(rt_lookup, edit_distance = 1)
 
     rt3_lookup = bu.load_whitelist(RT3_FILE)
     rt3_whitelist = bu.construct_mismatch_to_whitelist_map(rt3_lookup, edit_distance = 1)
@@ -511,7 +575,7 @@ if __name__ == '__main__':
     if args.level == 3:
         x = make_undetermined_dict_3lvl(args.input_file, args.output_file)
     else:
-        x = make_undetermined_dict_3lvl(args.input_file, args.output_file)
+        x = make_undetermined_dict_2lvl(args.input_file, args.output_file)
 
 
 

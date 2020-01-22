@@ -7,6 +7,7 @@ params.level = 3
 params.bcl_max_mem = 40
 params.fastq_chunk_size = 100000000
 params.run_recovery = false
+params.rt_barcode_file="default"
 //print usage
 if (params.help) {
     log.info ''
@@ -32,6 +33,7 @@ if (params.help) {
     log.info ''
     log.info ''
     log.info 'Optional parameters (specify in your config file):'
+    log.info '    params.rt_barcode_file = "default"         The path to a custom RT barcode file. If "default", default BBI barcodes will be used.'
     log.info '    params.max_cores = 16                      The maximum number of cores to use - fewer will be used if appropriate.'
     log.info '    process.maxForks = 20                      The maximum number of processes to run at the same time on the cluster.'
     log.info '    process.queue = "trapnell-short.q"         The queue on the cluster where the jobs should be submitted. '
@@ -64,7 +66,7 @@ process check_sample_sheet {
         file "*.csv" into good_sample_sheet
 
     """
-    check_sample_sheet.py --sample_sheet $params.sample_sheet --star_file $star_file --level $params.level
+    check_sample_sheet.py --sample_sheet $params.sample_sheet --star_file $star_file --level $params.level --rt_barcode_file $params.rt_barcode_file
     """
 }
 
@@ -157,6 +159,7 @@ process seg_sample_fastqs {
         --read1 $R1 --read2 $R2 \
         --file_name $R1 --sample_layout $sample_sheet_file \
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
+        --rt_barcode_file $params.rt_barcode_file \
         --output_dir ./demux_out --level $params.level
     gzip demux_out/*.fastq
     """    

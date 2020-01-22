@@ -195,12 +195,16 @@ if __name__ == '__main__':
     parser.add_argument('--p7_length', type=int, default=10, help='Expected P7 index length.')
     parser.add_argument('--p5_length', type=int, default=10, help='Expected P5 index length.')
     parser.add_argument('--level', required=True, help = "2 or 3 level sci?")
+    parser.add_argument('--rt_barcode_file', required=True, help='Path to RT barcode file, or "default".')
     args = parser.parse_args()
 
-    if args.level == "3":
-        rtfile = RT3_FILE
+    if args.rt_barcode_file == "default":
+        if args.level == "3":
+            rtfile = RT3_FILE
+        else:
+            rtfile = RT_FILE
     else:
-        rtfile = RT_FILE
+        rtfile = args.rt_barcode_file
     lane_num = args.file_name
     lane_num = lane_num.replace("Undetermined_S0_L", "L")
     lane_num = lane_num.replace("_R1_001.fastq.gz", "")

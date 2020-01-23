@@ -380,7 +380,7 @@ function SummaryTable(props) {
 function Header(props) {
   return React.createElement(
     'nav',
-    { className: 'navbar navbar-expand-md sticky-top navbar-light', style: 'background-color: #e3f2fd;' },
+    { className: 'navbar navbar-expand-md sticky-top navbar-light', style: { backgroundColor: "#e3f2fd" } },
     React.createElement(
       'div',
       { className: 'navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2' },

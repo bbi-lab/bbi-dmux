@@ -79,8 +79,10 @@ for (lane in lane_list) {
 
    sent_norm_pics <- c(sent_norm_pics, paste0("demux_dash/img/", lane, "_", p, ".rt_plate_sent_norm.png"))
    } else {
-    png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate_sent_norm.png"), width = 6, height = 4, res = 200, units = "in")
-    print(ggplot() + geom_text(aes(x = 1, y = 1, label = "No sentinel detected for this plate")) + theme_bw() + labs(x = "", y = ""))
+    png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate_sent_norm.png"), width = 5.5, height = 4, res = 200, units = "in")
+      print(ggplot(aes(as.factor(Var1), Var2), data = data) +
+            geom_point(shape=21, size = 10) + geom_text(aes(x = 6.5, y = "D", label = "No Sentinel detected for this plate")) + 
+            theme_bw() + labs(x = "", y = "") )
     dev.off()
 
    sent_norm_pics <- c(sent_norm_pics, paste0("demux_dash/img/", lane, "_", p, ".rt_plate_sent_norm.png"))
@@ -95,8 +97,11 @@ for (lane in lane_list) {
     dev.off()
     barn_norm_pics <- c(barn_norm_pics, paste0("demux_dash/img/", lane, "_", p, ".rt_plate_barn_norm.png"))
    } else {
-    png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate_barn_norm.png"), width = 6, height = 4, res = 200, units = "in")
-      print(ggplot() + geom_text(aes(x = 1, y = 1, label = "No barnyard detected for this plate")) + theme_bw() + labs(x = "", y = ""))
+     print(head(data))
+    png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate_barn_norm.png"), width = 5.5, height = 4, res = 200, units = "in")
+      print(ggplot(aes(as.factor(Var1), Var2), data = data) +
+            geom_point(shape=21, size = 10) + geom_text(aes(x = 6.5, y = "D", label = "No barnyard detected for this plate")) + 
+            theme_bw() + labs(x = "", y = "") )
     dev.off()
 
    barn_norm_pics <- c(barn_norm_pics, paste0("demux_dash/img/", lane, "_", p, ".rt_plate_barn_norm.png"))

@@ -25,7 +25,6 @@ p5_cols <- unlist(stringr::str_split(args$p5_cols, " "))
 
 samp <- read.csv(args$sample_sheet, header = T)
 
-
 if(length(samp$Sample.ID == "Sentinel") > 0) {
     sent_barcs <- as.character(samp[samp$Sample.ID == "Sentinel",]$RT.Barcode)
 } else {
@@ -36,6 +35,7 @@ if(length(samp$Sample.ID == "Barnyard") > 0) {
 } else {
     barn_barcs <- NULL
 }
+
 barn_norm_pics <- c()
 sent_norm_pics <- c()
 for (lane in lane_list) {
@@ -78,7 +78,15 @@ for (lane in lane_list) {
     dev.off()
 
    sent_norm_pics <- c(sent_norm_pics, paste0("demux_dash/img/", lane, "_", p, ".rt_plate_sent_norm.png"))
+   } else {
+    png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate_sent_norm.png"), width = 6, height = 4, res = 200, units = "in")
+    print(ggplot() + geom_text(aes(x = 1, y = 1, label = "No sentinel detected for this plate")) + theme_bw() + labs(x = "", y = ""))
+    dev.off()
+
+   sent_norm_pics <- c(sent_norm_pics, paste0("demux_dash/img/", lane, "_", p, ".rt_plate_sent_norm.png"))
    }
+
+
    if (!is.null(barn_norm)) {
     png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate_barn_norm.png"), width = 6, height = 4, res = 200, units = "in")
     print(ggplot(aes(as.factor(Var1), Var2, fill = log2(ReadCount/barn_norm)), data = data) +
@@ -86,9 +94,15 @@ for (lane in lane_list) {
             scale_fill_gradient2(name = "log2 norm value", low = "red", mid="white", high = "blue"))
     dev.off()
     barn_norm_pics <- c(barn_norm_pics, paste0("demux_dash/img/", lane, "_", p, ".rt_plate_barn_norm.png"))
+   } else {
+    png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate_barn_norm.png"), width = 6, height = 4, res = 200, units = "in")
+      print(ggplot() + geom_text(aes(x = 1, y = 1, label = "No barnyard detected for this plate")) + theme_bw() + labs(x = "", y = ""))
+    dev.off()
+
+   barn_norm_pics <- c(barn_norm_pics, paste0("demux_dash/img/", lane, "_", p, ".rt_plate_barn_norm.png"))
+
    }
 
- 
     png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate.png"), width = 6, height = 4, res = 200, units = "in")
     print(ggplot(aes(as.factor(Var1), Var2, fill = ReadCount), data = data) +
             geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
@@ -134,6 +148,8 @@ for (lane in lane_list) {
   pcr_counts$p7_row <- substring(pcr_counts$V2, first = 1, last = 1)
   pcr_counts$p7_col <- as.numeric(substring(pcr_counts$V2, first = 2,
                                             last = nchar(pcr_counts$V2)))
+
+  pcr_plate_list <- c()
   for (i in  1:length(unlist(stringr::str_split(args$p7_rows, " ")))) {
     sub <- subset(pcr_counts, p7_row == p7_rows[i] & p5_col == as.numeric(p5_cols[i]))
     p5_df <- data.frame(rows = sub$p5_row,
@@ -141,7 +157,7 @@ for (lane in lane_list) {
     data <- merge(plate, p5_df, by.x=c("Var1", "Var2"),
                   by.y=c("cols", "rows"), all.x=T)
     data$ReadCount[is.na(data$ReadCount)] <- 0
-    
+    pcr_plate_list <- c(pcr_plate_list, paste0(p7_rows[i], p5_cols[i]))
     png(file = paste0("demux_dash/img/", lane,"_", p7_rows[i], p5_cols[i], ".pcr_plate.png"), width = 6, height = 4, res = 200, units = "in")
     print(ggplot(aes(as.factor(Var1), Var2, fill = ReadCount), data = data) +
             geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
@@ -156,10 +172,6 @@ for (lane in lane_list) {
   data <- merge(plate, p5_df, by.x=c("Var1", "Var2"),
                 by.y=c("cols", "rows"), all.x=T)
   data$ReadCount[is.na(data$ReadCount)] <- 0
-  
-  
-  
-  
   
   p7_agg <- aggregate(pcr_counts$V3, by = list(orig=pcr_counts$V2), sum)
   p7_df <- data.frame(rows = substring(p7_agg$orig, first = 1, last = 1),
@@ -179,276 +191,28 @@ for (lane in lane_list) {
 }
 
 
-
-
 outtab <- lapply(lane_list, function(x) {
   sumstats <- jsonlite::fromJSON(paste0(x, ".stats.json"))
-  data.frame(`Total input reads` = round(sumstats$total_input_reads),
-             `Total passed reads` = round(sumstats$total_passed_reads),
-             `Pass percentage` = round(sumstats$fraction_passed_reads * 100, digits = 2),
-             `Percent uncorrected`= round(sumstats$fraction_uncorrected_reads * 100, digits = 2),
-             `Percent invalid RT`= round(sumstats$fraction_invalid_rt_well * 100, digits = 2),
-             `Percent PCR mismatch`= round(sumstats$fraction_pcr_mismatch * 100, digits = 2)
+  list("Lane" = gsub("L00", "Lane ", x),
+       "tot_inp_reads" = round(sumstats$total_input_reads),
+             "tot_pass_reads" = round(sumstats$total_passed_reads),
+             "pass_perc" = round(sumstats$fraction_passed_reads * 100, digits = 2),
+             "perc_uncorr"= round(sumstats$fraction_uncorrected_reads * 100, digits = 2),
+             "perc_inval_rt"= round(sumstats$fraction_invalid_rt_well * 100, digits = 2),
+             "perc_pcr_mismatch"= round(sumstats$fraction_pcr_mismatch * 100, digits = 2)
   )
 })
-tab <- as.data.frame(do.call(rbind, outtab))
-row.names(tab) <- lane_names
 
-top <- HTML('<!doctype html>
-<html lang="en">
-  <head>
-    <!-- Required meta tags -->
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+json_info <- list("run_name" = args$project_name, 
+             "lane_list" = lane_nums, 
+             "plate_list" = unique(rt_counts$plate),
+             "pcr_combo_list" = unique(pcr_plate_list),
+             "lig_combo_list" = c("P1", "P2", "P3", "P4"),
+             "level" = args$level,
+             "lane_stats" = outtab)
 
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <style>
-        .navbar-brand
-        {
-          font-size: xx-large !important;
-          display: flex;
-          align-items: center;
-          text-align: center;
-        }
-        .sidebar {
-          position: fixed;
-          top: 0;
-          bottom: 0;
-          left: 10px;
-          z-index: 100; /* Behind the navbar */
-          padding: 100px 0 0; /* Height of navbar */
-          box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
-        }
-        </style>
-  </head>')
-lig_code <- ""
-lig_head <- ""
-if(args$level == "3") {
-  lig_head <- HTML('<li class="nav-item">
-                <a class="nav-link" href="#lig">
-                  <span data-feather="shopping-cart"></span>
-                  Ligation Barcodes
-                </a>
-              </li>')
-  lig_plates <- unique(lig_counts$plate)
-  lig_code <- list(
-  HTML('          <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <h1 class="h3" id="lig">Ligation Barcodes</h1>
-            </div>
-          <nav>
-              <div class="nav nav-tabs" id="navlig-tab" role="tablist">'),
-  lapply(lane_nums, function(num) {
-    tags$a(class="nav-item nav-link", id=paste0("navlig-lane", num, "-tab"),
-           `data-toggle`="tab", href=paste0("#navlig-lane", num), role="tab",
-           `aria-controls`=paste0("navlig-lane", num),`aria-selected`="false", paste("Lane", num))
-  }),
-  HTML('              </div>
-          </nav>
-       <div class="tab-content" id="nav-tabContent">'),
-  lapply(lane_nums, function(num) {
-    tags$div(class="tab-pane fade", id=paste0("navlig-lane", num),
-             role="tabpanel", `aria-labelledby`=paste0("navlig-lane", num, "-tab"),
-             list(lapply(lig_plates, function(i) {
-               list(tags$h4(paste0("Ligation plate ",i)),
-                    tags$img(src=paste0("img/L00", num, "_", i, ".lig_plate.png"),
-                             width = "50%",
-                             class="rounded mx-auto d-block",
-                             alt="..."))
-             })))
-    
-  }))
-}
-
-
-body <- tags$body(
-  list(
-    HTML('    <nav class="navbar navbar-expand-md sticky-top navbar-light" style="background-color: #e3f2fd;">
-        <div class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">
-            <ul class="navbar-nav mr-auto">
-                <img src="img/bbi_icon.png" height="70" class="d-inline-block align-top" alt="">
-            </ul>
-        </div>
-        <div class="mx-auto order-0">
-            <a class="navbar-brand mx-auto" href="#">'), paste('Demultiplexing', args$project_name, 'QC Dashboard'), HTML('</a>
-        </div>
-        <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
-        </div>
-    </nav>
-    <div class="container-fluid">
-      <div class="row">
-        <nav class="col-md-2 d-none d-md-block bg-light sidebar">
-          <div class="sidebar-sticky">
-            <ul class="nav flex-column">
-              <li class="nav-item">
-                <a class="nav-link active" href="#summary">
-                  <span data-feather="home"></span>
-                  Summary Statistics <span class="sr-only">(current)</span>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#rt">
-                  <span data-feather="file"></span>
-                  RT Barcodes
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#pcr">
-                  <span data-feather="shopping-cart"></span>
-                  PCR Barcodes
-                </a>
-              </li>',
-         lig_head,
-            '</ul>
-          </div>
-        </nav>
-       <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4" style="padding-top: 15px;">'),
-    
-    tags$div(class="tab-content", id="nav-tabContent",
-             list(HTML('<div class="tab-content" id="nav-tabContent">
-              <div class="tab-pane fade show active" id="navstat-lane1" role="tabpanel" aria-labelledby="navstat-lane1-tab">
-                  <h3 class="h3" id="summary">Summary statistics</h3>
-                  <table class="table table-hover">
-                      <thead>
-                        <tr>
-                          <th scope="col"></th>'), 
-                  lapply(lane_names, function(lane) {
-                    tags$th(scope="col", lane)
-                  }),
-                  HTML('</tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <th scope="row">Total input reads</th>'),
-                  lapply(tab$Total.input.reads, function(lane) {
-                    tags$td(lane)
-                  }),
-                  HTML('</tr>
-                        <tr>
-                          <th scope="row">Total passed reads</th>'),
-                  lapply(tab$Total.passed.reads, function(lane) {
-                    tags$td(lane)
-                  }),   
-                  HTML('                        </tr>
-                        <tr>
-                          <th scope="row">Pass percentage</th>'),
-                  lapply(tab$Pass.percentage, function(lane) {
-                    tags$td(lane)
-                  }),
-                  HTML('                        </tr>
-                        <tr>
-                          <th scope="row">Percent uncorrected</th>'),
-                  lapply(tab$Percent.uncorrected, function(lane) {
-                    tags$td(lane)
-                  }),
-                  HTML('                        </tr>
-                        <tr>
-                          <th scope="row">Percent invalid RT</th>'),
-                  lapply(tab$Percent.invalid.RT, function(lane) {
-                    tags$td(lane)
-                  }),
-                  HTML('                        </tr>
-                        <tr>
-                          <th scope="row">Percent PCR mismatch</th>'),
-                  lapply(tab$Percent.PCR.mismatch, function(lane) {
-                    tags$td(lane)
-                  }),
-                  HTML('                       </tr>
-                      </tbody>
-                    </table>'))),
-    HTML('          <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <h1 class="h3" id="pcr">RT Barcodes</h1>
-            </div>
-          <nav>
-              <div class="nav nav-tabs" id="navrt-tab" role="tablist">'),
-    lapply(lane_nums, function(num) {
-      tags$a(class="nav-item nav-link", id=paste0("navrt-lane", num, "-tab"), 
-             `data-toggle`="tab", href=paste0("#navrt-lane", num), role="tab", 
-             `aria-controls`=paste0("navrt-lane", num),`aria-selected`="false", paste("Lane", num))
-    }),
-    HTML('              </div>
-          </nav>
-       <div class="tab-content" id="nav-tabContent">'),
-    lapply(lane_nums, function(num) {
-      tags$div(class="tab-pane fade", id=paste0("navrt-lane", num), 
-               role="tabpanel", `aria-labelledby`=paste0("navrt-lane", num, "-tab"),
-               list(lapply(unique(rt_counts$plate), function(p) {
-                 list(tags$h4(paste0("Plate ",p)),
-                      tags$img(src=paste0("img/L00", num, "_", p, ".rt_plate.png"), 
-                               width = "50%",
-                               class="rounded mx-auto d-block",
-                               alt="..."), 
-                      if(paste0("demux_dash/img/L00", num, "_", p, ".rt_plate_sent_norm.png") %in% sent_norm_pics) {
-                          list(tags$h5("Sentinel Normalized"),
-                          tags$img(src=paste0("img/L00", num, "_", p, ".rt_plate_sent_norm.png"),
-                               width = "50%",
-                               class="rounded mx-auto d-block",
-                               alt="..."))
-                      }, 
-                      if(paste0("demux_dash/img/L00", num, "_", p, ".rt_plate_barn_norm.png") %in% barn_norm_pics) {
-                          list(tags$h5("Barnyard Normalized"),
-                          tags$img(src=paste0("img/L00", num, "_", p, ".rt_plate_barn_norm.png"),
-                               width = "50%",
-                               class="rounded mx-auto d-block",
-                               alt="..."))
-                      }
-
-                 )
-               })))
-      
-    }),
-    
-    # PCR barcodes
-    
-    HTML('          <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <h1 class="h3" id="pcr">PCR Barcodes</h1>
-            </div>
-          <nav>
-              <div class="nav nav-tabs" id="navrt-tab" role="tablist">'),
-    lapply(lane_nums, function(num) {
-      tags$a(class="nav-item nav-link", id=paste0("navpcr-lane", num, "-tab"), 
-             `data-toggle`="tab", href=paste0("#navpcr-lane", num), role="tab", 
-             `aria-controls`=paste0("navpcr-lane", num),`aria-selected`="false", paste("Lane", num))
-    }),
-    HTML('              </div>
-          </nav>
-       <div class="tab-content" id="nav-tabContent">'),
-    lapply(lane_nums, function(num) {
-      tags$div(class="tab-pane fade", id=paste0("navpcr-lane", num), 
-               role="tabpanel", `aria-labelledby`=paste0("navpcr-lane", num, "-tab"),
-               list(lapply(1:length(unlist(stringr::str_split(args$p7_rows, " "))), function(i) {
-                 list(tags$h4(paste0("PCR Combo ",p7_rows[i], p5_cols[i])),
-                      tags$img(src=paste0("img/L00", num, "_", p7_rows[i], p5_cols[i], ".pcr_plate.png"), 
-                               width = "50%",
-                               class="rounded mx-auto d-block",
-                               alt="..."))
-               })))
-      
-    }),
-    
-    lig_code,
-    
-    HTML('
-    </main>
-      </div>
-      </div>
-      
-      
-      <!-- Optional JavaScript -->
-      <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-      <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-      <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-      ')
-  )
-)
-
-end <- HTML('</html>')
-
-
-fileConn<-file("demux_dash/demux_dash.html")
-writeLines(c(as.character(top),as.character(body), as.character(end)), fileConn)
+fileConn<-file("demux_dash/js/run_data.js")
+writeLines(c("const run_data =", toJSON(json_info)), fileConn)
 close(fileConn)
 
 
-    

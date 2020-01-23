@@ -341,8 +341,7 @@ process demux_dash {
 
     """
     mkdir demux_dash
-    mkdir demux_dash/img
-    cp $baseDir/bin/bbi_icon.png demux_dash/img/
+    cp -R $baseDir/bin/skeleton_dash/* demux_dash/
     generate_html.R \
         "." --p7_rows "$params.p7_rows" --p5_cols "$params.p5_cols" --level "$params.level" --project_name "${project_name}" --sample_sheet "$sample_sheet_file2"
 

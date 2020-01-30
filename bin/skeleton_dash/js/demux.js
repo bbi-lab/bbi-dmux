@@ -100,6 +100,21 @@ function PCRTab(props) {
   return React.createElement(
     'div',
     { className: props.className, id: "navpcr-lane" + props.lane, role: 'tabpanel', 'aria-labelledby': "navpcr-lane" + props.lane + "-tab" },
+    React.createElement(
+      'p',
+      null,
+      'Wells circled in ',
+      React.createElement(
+        'strong',
+        null,
+        React.createElement(
+          'span',
+          { style: { color: "red" } },
+          'red'
+        )
+      ),
+      ' have >2 orders of magnitude fewer reads than the median well in the plate.'
+    ),
     plates
   );
 }

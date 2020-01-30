@@ -162,11 +162,15 @@ for (lane in lane_list) {
     data <- merge(plate, p5_df, by.x=c("Var1", "Var2"),
                   by.y=c("cols", "rows"), all.x=T)
     data$ReadCount[is.na(data$ReadCount)] <- 0
+
+    data$outlier <- data$ReadCount < 0.01 * median(data$ReadCount)
     pcr_plate_list <- c(pcr_plate_list, paste0(p7_rows[i], p5_cols[i]))
     png(file = paste0("demux_dash/img/", lane,"_", p7_rows[i], p5_cols[i], ".pcr_plate.png"), width = 6, height = 4, res = 200, units = "in")
-    print(ggplot(aes(as.factor(Var1), Var2, fill = ReadCount), data = data) +
-            geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
-            scale_fill_gradient(low = "white", high = "blue"))
+    print(ggplot(aes(as.factor(Var1), Var2, fill = ReadCount, color=outlier, stroke=outlier), data = data) +
+          geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
+          scale_fill_gradient(low = "white", high = "blue") + scale_color_manual(values=c("black", "red"), guide=FALSE) +
+          scale_discrete_manual(aesthetics = "stroke", values = c(0.5,1), guide=FALSE
+          ))
     dev.off()
   }
   p5_agg <- aggregate(pcr_counts$V3, by = list(orig=pcr_counts$V1), sum)

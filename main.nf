@@ -323,8 +323,8 @@ with open("${prefix}.stats.json", 'w') as f:
     f.write(json.dumps(stats, indent=4))
     """
 }
-
-project_name = params.output_dir.substring(params.output_dir.lastIndexOf("/")+1);
+out_dir_str = params.output_dir.replaceAll("/\\z", "");
+project_name = out_dir_str.substring(out_dir_str.lastIndexOf("/")+1);
 process demux_dash {
     module 'java/latest:modules:modules-init:modules-gs:gcc/8.1.0:R/3.6.1'
     memory '8 GB'    

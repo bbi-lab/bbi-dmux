@@ -11,9 +11,7 @@ import operator
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 P5_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/p5.txt')
 P7_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/p7.txt')
-RT_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/rt2.txt')
 LIG_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/ligation.txt')
-RT3_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/rt.txt')
 
 NEXTSEQ = 'NextSeq'
 MISEQ = 'MiSeq'
@@ -533,6 +531,7 @@ if __name__ == '__main__':
     parser.add_argument('--run_directory', required=True, help='Path to BCL directory for sequencing run.')
     parser.add_argument('--input_file', required=True, help='File name for input file.')
     parser.add_argument('--output_file', required=True, help='File name for output file.')
+    parser.add_argument('--rt_barcodes', default="default", help="file name for custom RT barcodes.")
 #    parser.add_argument('--read2', nargs='?', type=argparse.FileType('r'), default=sys.stdin, required=True, help='Text piped in from stdin for R2.')
 #    parser.add_argument('--file_name', required=True, help='The R1 file name.')
     parser.add_argument('--sample_layout', required=True, help='Text file containing the sample layout by RT well.')
@@ -544,6 +543,11 @@ if __name__ == '__main__':
     parser.add_argument('--level', required=True, help = "2 or 3 level sci?")
     args = parser.parse_args()
 
+    rt_file = os.path.join(SCRIPT_DIR, 'barcode_files/rt2.txt')
+    rt3_file = os.path.join(SCRIPT_DIR, 'barcode_files/rt.txt')
+    if args$rt_barcodes != "default":
+        rt_file = args$rt_barcodes
+        rt3_file = args$rt_barcodes
 
     sample_rt_lookup = load_sample_layout(args.sample_layout)
     p7_lookup = bu.load_whitelist(P7_FILE)
@@ -558,10 +562,10 @@ if __name__ == '__main__':
 
     programmed_pcr_combos = get_programmed_pcr_combos(p5_lookup, p7_lookup, args.p5_cols_used, args.p7_rows_used)
 
-    rt2_lookup = bu.load_whitelist(RT_FILE)
+    rt2_lookup = bu.load_whitelist(rt_file)
     rt2_whitelist = bu.construct_mismatch_to_whitelist_map(rt2_lookup, edit_distance = 1)
 
-    rt3_lookup = bu.load_whitelist(RT3_FILE)
+    rt3_lookup = bu.load_whitelist(rt3_file)
     rt3_whitelist = bu.construct_mismatch_to_whitelist_map(rt3_lookup, edit_distance = 1)
 
 
@@ -572,7 +576,7 @@ if __name__ == '__main__':
     lig_10_whitelist = bu.construct_mismatch_to_whitelist_map(lig_10_lookup, edit_distance = 1)
     lig_9_whitelist = bu.construct_mismatch_to_whitelist_map(lig_9_lookup, edit_distance = 1)
 
-    if args.level == 3:
+    if args.level == "3":
         x = make_undetermined_dict_3lvl(args.input_file, args.output_file)
     else:
         x = make_undetermined_dict_2lvl(args.input_file, args.output_file)

@@ -376,8 +376,8 @@ process run_recovery {
         --run_directory $params.run_dir \
         --sample_layout $sample_sheet_file3 \
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
-        --level $params.level
-
+        --level $params.level \
+        --rt_barcodes $params.rt_barcode_file
 
 
 

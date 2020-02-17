@@ -45,6 +45,23 @@ def get_programmed_pcr_combos(p5_lookup, p7_lookup, p5_cols_used, p7_rows_used):
 
     return valid_combos
 
+def get_programmed_pcr_combos_wells(p5_wells_used, p7_wells_used):
+    """
+    Assuming p5 and p7 are wells, get the set of (p5, p7) wells that were programmed.
+    These are the set that would have been physically combined.
+    Args:
+        p5_wells_used (list): A list of the wells used from P5 plate for PCR in same order as P7 to indicate the pairs of P7 and P5 used (e.g. A1 B1 C1 for p7 and C1 D2 E3 for p5.
+        p7_wells_used: A list of the rows used from P7 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. A1 B1 C1 for p7 and C1 D2 E3 for p5.
+    Returns:
+        set of (p5, p7): set of (p5, p7) well ID tuples that are valid.
+    """
+
+    valid_combos = set()
+    for selected_p5, selected_p7 in zip(p5_wells_used, p7_wells_used):
+        valid_combos.add((selected_p5, selected_p7))
+
+    return valid_combos
+
 
 def quick_parse(file_path):
     # a copy of only the relevant lines from easygrid.read_delim
@@ -191,6 +208,8 @@ if __name__ == '__main__':
     parser.add_argument('--sample_layout', required=True, help='Text file containing the sample layout by RT well.')
     parser.add_argument('--p5_cols_used', nargs='+', type=int, required=True, help='A list of the columns used from P5 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A B C for p7 and --p5 1 2 3 for p5.')
     parser.add_argument('--p7_rows_used', nargs='+', required=True, help='A list of the rows used from P7 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A B C for p7 and --p5 1 2 3 for p5.')
+    parser.add_argument('--p5_wells_used', nargs='+', required=True, help='A list of the wells used from P5 plate for PCR in same order as P7 to indicate the pairs of P7 and P5 used (e.g. --p7 A1 B1 C1 for p7 and --p5 A1 A2 A3 for p5. Alternative to p5_cols_used.')
+    parser.add_argument('--p7_wells_used', nargs='+', required=True, help='A list of the wells used from P7 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A1 B1 C1 for p7 and --p5 A1 A2 A3 for p5. Alternative to p7_rows_used.')
     parser.add_argument('--output_dir', required=True, help='Output directory for files.')
     parser.add_argument('--p7_length', type=int, default=10, help='Expected P7 index length.')
     parser.add_argument('--p5_length', type=int, default=10, help='Expected P5 index length.')
@@ -228,7 +247,11 @@ if __name__ == '__main__':
     p5_lookup = {sequence[0:args.p5_length]: well for sequence,well in p5_lookup.items()}
 
     # Get the set of all valid PCR combos
-    programmed_pcr_combos = get_programmed_pcr_combos(p5_lookup, p7_lookup, args.p5_cols_used, args.p7_rows_used)
+    # Not very robust - to be improved
+    if args.p5_cols_used != 0:
+        programmed_pcr_combos = get_programmed_pcr_combos(p5_lookup, p7_lookup, args.p5_cols_used, args.p7_rows_used)
+    else:
+        programmed_pcr_combos = get_programmed_pcr_combos(args.p5_wells_used, args.p7_wells_used)
 
     # Define where all sequences are and what the whitelists are
 

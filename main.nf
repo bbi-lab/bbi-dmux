@@ -8,6 +8,12 @@ params.bcl_max_mem = 40
 params.fastq_chunk_size = 100000000
 params.run_recovery = false
 params.rt_barcode_file="default"
+
+params.p5_cols = false
+params.p7_rows = false
+params.p5_wells = false
+params.p7_wells = false
+
 //print usage
 if (params.help) {
     log.info ''
@@ -27,9 +33,13 @@ if (params.help) {
     log.info '    params.run_dir = RUN_DIRECTORY             Path to the sequencer output.'
     log.info '    params.output_dir OUTPUT DIRECTORY         Output directory.'
     log.info '    params.sample_sheet = SAMPLE_SHEET_PATH    Sample sheet of the format described in the README.'
+    log.info '    params.level = 3                           Level of run - either 2 or 3.'
+    log.info ''
+    log.info 'Required parameters (one of the pairs below is required - p7_wells and p5_wells or p7_rows and p5_cols):'
+    log.info '    params.p7_wells = "A1 B1 C1"               Alternative to p7_rows and p5_cols - specify specific PCR wells instead of full rows/columns. Must match order of params.p5_wells.'
+    log.info '    params.p5_wells = "A1 A2 A3"               Alternative to p7_rows and p5_cols - specify specific PCR wells instead of full rows/columns. Must match order of params.p7_wells.'
     log.info '    params.p7_rows = "A B C"                   The PCR rows used - must match order of params.p5_cols.'
     log.info '    params.p5_cols = "1 2 3"                   The PCR columns used - must match order of params.p7_rows.'
-    log.info '    params.level = 3                           Level of run - either 2 or 3.'
     log.info ''
     log.info ''
     log.info 'Optional parameters (specify in your config file):'
@@ -48,8 +58,13 @@ if (params.help) {
 }
 
 // check required options
-if (!params.run_dir || !params.output_dir || !params.sample_sheet || !params.p7_rows || !params.p5_cols) {
-    exit 1, "Must include config file using -c CONFIG_FILE.config that includes output_dir, sample_sheet, run_dir, p7_rows and p5_cols"
+if (!params.run_dir || !params.output_dir || !params.sample_sheet ) {
+    exit 1, "Must include config file using -c CONFIG_FILE.config that includes output_dir, sample_sheet and run_dir."
+}
+
+// check required options
+if (!(params.p7_rows && params.p7_cols) && !(params.p7_wells && params.p7_wells)) {
+    exit 1, "Must include config file using -c CONFIG_FILE.config that includes p7_rows and p5_cols or p5_wells and p7_wells"
 }
 
 star_file = file(params.star_file)
@@ -159,6 +174,7 @@ process seg_sample_fastqs {
         --read1 $R1 --read2 $R2 \
         --file_name $R1 --sample_layout $sample_sheet_file \
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
+        --p5_wells_used $params.p5_wells --p7_wells_used $params.p7_wells \
         --rt_barcode_file $params.rt_barcode_file \
         --output_dir ./demux_out --level $params.level
     gzip demux_out/*.fastq

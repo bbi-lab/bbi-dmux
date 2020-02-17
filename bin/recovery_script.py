@@ -545,9 +545,9 @@ if __name__ == '__main__':
 
     rt_file = os.path.join(SCRIPT_DIR, 'barcode_files/rt2.txt')
     rt3_file = os.path.join(SCRIPT_DIR, 'barcode_files/rt.txt')
-    if args$rt_barcodes != "default":
-        rt_file = args$rt_barcodes
-        rt3_file = args$rt_barcodes
+    if args.rt_barcodes != "default":
+        rt_file = args.rt_barcodes
+        rt3_file = args.rt_barcodes
 
     sample_rt_lookup = load_sample_layout(args.sample_layout)
     p7_lookup = bu.load_whitelist(P7_FILE)

@@ -23,8 +23,15 @@ lane_list <- gsub(".stats.json", "", list.files(args$input_folder, pattern = ".j
 lane_names <- gsub("L00", "Lane ", lane_list)
 lane_nums <- gsub("L00", "", lane_list)
 
-p7_rows <- unlist(stringr::str_split(args$p7_rows, " "))
-p5_cols <- unlist(stringr::str_split(args$p5_cols, " "))
+if (p7_rows != 0) {
+  p7_rows <- unlist(stringr::str_split(args$p7_rows, " "))
+  p5_cols <- unlist(stringr::str_split(args$p5_cols, " "))
+} else {
+  p7_rows <- unlist(stringr::str_split(args$p7_wells, " "))
+  p7_rows <- substr(p7_rows, start=1, stop=1)
+  p5_cols <- unlist(stringr::str_split(args$p5_wells, " "))
+  p5_cols <- substr(p5_cols, start=2, stop = 3)
+}
 
 samp <- read.csv(args$sample_sheet, header = T)
 
@@ -177,7 +184,7 @@ for (lane in lane_list) {
                                             last = nchar(pcr_counts$V2)))
 
   pcr_plate_list <- c()
-  for (i in  1:length(unlist(stringr::str_split(args$p7_rows, " ")))) {
+  for (i in  1:length(p7_rows)) {
     sub <- subset(pcr_counts, p7_row == p7_rows[i] & p5_col == as.numeric(p5_cols[i]))
     p5_df <- data.frame(rows = sub$p5_row,
                             cols = sub$p7_col, ReadCount = sub$V3)

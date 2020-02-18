@@ -363,8 +363,6 @@ process demux_dash {
 
     """
 
-
-
 }
 
 save_recovery2 = {params.output_dir + "/recovery_output/" +  it - ~/.fastq.gz-summary.txt/ + "-recovery_summary.txt"}

@@ -359,7 +359,7 @@ process demux_dash {
     mkdir demux_dash
     cp -R $baseDir/bin/skeleton_dash/* demux_dash/
     generate_html.R \
-        "." --p7_rows "$params.p7_rows" --p5_cols "$params.p5_cols" --level "$params.level" --project_name "${project_name}" --sample_sheet "$sample_sheet_file2"
+        "." --p7_rows "$params.p7_rows" --p5_cols "$params.p5_cols" --p7_wells "$params.p7_wells" --p5_wells "$params.p5_wells" --level "$params.level" --project_name "${project_name}" --sample_sheet "$sample_sheet_file2"
 
     """
 

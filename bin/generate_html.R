@@ -12,6 +12,8 @@ parser = argparse::ArgumentParser(description='Script to generate demux dashboar
 parser$add_argument('input_folder', help='input folder.')
 parser$add_argument('--p7_rows', required=TRUE, help='p7 rows')
 parser$add_argument('--p5_cols', required=TRUE, help='p5 cols')
+parser$add_argument('--p7_wells', required=TRUE, help='p7 wells')
+parser$add_argument('--p5_wells', required=TRUE, help='p5 wells')
 parser$add_argument('--level', required=TRUE, help='2 or 3 level')
 parser$add_argument('--project_name', required=TRUE, help='Name of the project')
 parser$add_argument('--sample_sheet', required=TRUE, help='sample_sheet')

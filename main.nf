@@ -9,10 +9,10 @@ params.fastq_chunk_size = 100000000
 params.run_recovery = false
 params.rt_barcode_file="default"
 
-params.p5_cols = false
-params.p7_rows = false
-params.p5_wells = false
-params.p7_wells = false
+params.p5_cols = 0
+params.p7_rows = 0
+params.p5_wells = 0
+params.p7_wells = 0
 
 //print usage
 if (params.help) {

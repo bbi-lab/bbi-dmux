@@ -63,7 +63,7 @@ if (!params.run_dir || !params.output_dir || !params.sample_sheet ) {
 }
 
 // check required options
-if (!(params.p7_rows && params.p7_cols) && !(params.p7_wells && params.p7_wells)) {
+if (!(params.p7_rows && params.p5_cols) && !(params.p7_wells && params.p5_wells)) {
     exit 1, "Must include config file using -c CONFIG_FILE.config that includes p7_rows and p5_cols or p5_wells and p7_wells"
 }
 

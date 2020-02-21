@@ -204,6 +204,9 @@ function PCRTabPlate(props) {
 }
 
 function PCRBarcodes(props) {
+  var lane_list = props.lane_stats.map(function (item) {
+    return item.Lane;
+  });
   return React.createElement(
     "div",
     { className: "tab-pane fade", id: "pcr", role: "tabpanel", "aria-labelledby": "pcr-tab" },
@@ -216,38 +219,98 @@ function PCRBarcodes(props) {
         "PCR Barcodes"
       )
     ),
-    React.createElement(
-      "nav",
+    Object.keys(props.pcr_combo_list).length === 0 ? React.createElement(
+      "span",
       null,
       React.createElement(
-        "div",
-        { className: "nav nav-tabs", id: "navpcr-tab", role: "tablist" },
+        "h4",
+        null,
+        "Well combination read counts:"
+      ),
+      React.createElement(
+        "table",
+        { className: "table table-hover" },
         React.createElement(
-          "a",
-          { className: "nav-item nav-link", id: "navpcr-lane1-tab", "data-toggle": "tab", href: "#navpcr-lane1", role: "tab", "aria-controls": "navpcr-lane1", "aria-selected": "false" },
-          "Lane 1"
+          "thead",
+          null,
+          React.createElement(
+            "tr",
+            null,
+            React.createElement(
+              "th",
+              { scope: "col" },
+              "p5 well"
+            ),
+            React.createElement(
+              "th",
+              { scope: "col" },
+              "p7 well"
+            ),
+            lane_list.map(function (item, index) {
+              return React.createElement(TitleRow, { key: index, samp: item });
+            })
+          )
         ),
         React.createElement(
-          "a",
-          { className: "nav-item nav-link", id: "navpcr-lane2-tab", "data-toggle": "tab", href: "#navpcr-lane2", role: "tab", "aria-controls": "navpcr-lane2", "aria-selected": "false" },
-          "Lane 2"
-        ),
-        React.createElement(
-          "a",
-          { className: "nav-item nav-link", id: "navpcr-lane3-tab", "data-toggle": "tab", href: "#navpcr-lane3", role: "tab", "aria-controls": "navpcr-lane3", "aria-selected": "false" },
-          "Lane 3"
-        ),
-        React.createElement(
-          "a",
-          { className: "nav-item nav-link", id: "navpcr-lane4-tab", "data-toggle": "tab", href: "#navpcr-lane4", role: "tab", "aria-controls": "navpcr-lane4", "aria-selected": "false" },
-          "Lane 4"
+          "tbody",
+          null,
+          props.pcr_well_info.map(function (item, index) {
+            return React.createElement(
+              "tr",
+              { key: index },
+              React.createElement(
+                "th",
+                { scope: "row" },
+                item.p5
+              ),
+              React.createElement(
+                "th",
+                { scope: "row" },
+                item.p7
+              ),
+              lane_list.map(function (lane, index) {
+                return React.createElement(RegRow, { key: index, val: item[lane] });
+              })
+            );
+          })
         )
       )
-    ),
-    React.createElement(
-      "div",
-      { className: "tab-content", id: "nav-pcrContent" },
-      props.pcr_tabs
+    ) : React.createElement(
+      "span",
+      null,
+      React.createElement(
+        "nav",
+        null,
+        React.createElement(
+          "div",
+          { className: "nav nav-tabs", id: "navpcr-tab", role: "tablist" },
+          React.createElement(
+            "a",
+            { className: "nav-item nav-link", id: "navpcr-lane1-tab", "data-toggle": "tab", href: "#navpcr-lane1", role: "tab", "aria-controls": "navpcr-lane1", "aria-selected": "false" },
+            "Lane 1"
+          ),
+          React.createElement(
+            "a",
+            { className: "nav-item nav-link", id: "navpcr-lane2-tab", "data-toggle": "tab", href: "#navpcr-lane2", role: "tab", "aria-controls": "navpcr-lane2", "aria-selected": "false" },
+            "Lane 2"
+          ),
+          React.createElement(
+            "a",
+            { className: "nav-item nav-link", id: "navpcr-lane3-tab", "data-toggle": "tab", href: "#navpcr-lane3", role: "tab", "aria-controls": "navpcr-lane3", "aria-selected": "false" },
+            "Lane 3"
+          ),
+          React.createElement(
+            "a",
+            { className: "nav-item nav-link", id: "navpcr-lane4-tab", "data-toggle": "tab", href: "#navpcr-lane4", role: "tab", "aria-controls": "navpcr-lane4", "aria-selected": "false" },
+            "Lane 4"
+          )
+        )
+      ),
+      React.createElement(
+        "div",
+        { className: "tab-content", id: "nav-pcrContent" },
+        props.pcr_tabs
+      )
     )
   );
 }
@@ -513,7 +576,7 @@ function DemuxPage(props) {
             { className: "tab-content", id: "nav-tabContent" },
             React.createElement(SummaryTable, { lane_stats: props.lane_stats }),
             React.createElement(RTBarcodes, { rt_tabs: props.rt_tabs, bad_wells: props.bad_wells }),
-            React.createElement(PCRBarcodes, { pcr_tabs: props.pcr_tabs }),
+            React.createElement(PCRBarcodes, { pcr_tabs: props.pcr_tabs, lane_stats: props.lane_stats, pcr_combo_list: props.pcr_combo_list, pcr_well_info: props.pcr_well_info }),
             props.level == 3 ? React.createElement(LigBarcodes, { lig_tabs: props.lig_tabs }) : ""
           )
         )
@@ -534,6 +597,7 @@ var level = run_data['level'];
 var bad_wells = run_data['bad_wells'];
 var bad_wells_barcodes = run_data['bad_wells_barcodes'];
 var include_norm = run_data['include_norm'];
+var pcr_well_info = run_data['pcr_well_info'];
 
 var LigTabs = lane_list.map(function (lane, index) {
   return React.createElement(LigTab, { key: index, className: "tab-pane fade", lane: lane });
@@ -544,7 +608,7 @@ var RTTabs = lane_list.map(function (lane, index) {
 });
 
 var PCRLaneTabs = lane_list.map(function (lane, index) {
-  return React.createElement(PCRTab, { key: index, className: "tab-pane fade", lane: lane });
+  return Object.keys(pcr_combo_list).length === 0 ? "" : React.createElement(PCRTab, { key: index, className: "tab-pane fade", lane: lane });
 });
 
-ReactDOM.render(React.createElement(DemuxPage, { rt_tabs: RTTabs, pcr_tabs: PCRLaneTabs, lig_tabs: LigTabs, lane_stats: lane_stats, level: level, run_name: run_name, bad_wells: bad_wells }), document.getElementById('demux_page'));
+ReactDOM.render(React.createElement(DemuxPage, { rt_tabs: RTTabs, pcr_tabs: PCRLaneTabs, pcr_well_info: pcr_well_info, pcr_combo_list: pcr_combo_list, lig_tabs: LigTabs, lane_stats: lane_stats, level: level, run_name: run_name, bad_wells: bad_wells }), document.getElementById('demux_page'));

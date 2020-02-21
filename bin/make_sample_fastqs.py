@@ -55,9 +55,12 @@ def get_programmed_pcr_combos_wells(p5_wells_used, p7_wells_used):
     Returns:
         set of (p5, p7): set of (p5, p7) well ID tuples that are valid.
     """
+    good_nums = {1:"01", 2:"02", 3:"03", 4:"04", 5:"05", 6:"06", 7:"07", 8:"08", 9:"09", 10:"10", 11:"11", 12:"12"}
 
     valid_combos = set()
-    for selected_p5, selected_p7 in zip(p5_wells_used, p7_wells_used):
+    p5_wells_fixed = [p5_well[0] + good_nums[int(p5_well[1:])] for p5_well in p5_wells_used]
+    p7_wells_fixed = [p7_well[0] + good_nums[int(p7_well[1:])] for p7_well in p7_wells_used]
+    for selected_p5, selected_p7 in zip(p5_wells_fixed, p7_wells_fixed):
         valid_combos.add((selected_p5, selected_p7))
 
     return valid_combos
@@ -248,11 +251,12 @@ if __name__ == '__main__':
 
     # Get the set of all valid PCR combos
     # Not very robust - to be improved
-    if args.p5_cols_used != 0:
+    print(args.p5_cols_used)
+    if args.p5_cols_used != [0]:
         programmed_pcr_combos = get_programmed_pcr_combos(p5_lookup, p7_lookup, args.p5_cols_used, args.p7_rows_used)
     else:
-        programmed_pcr_combos = get_programmed_pcr_combos(args.p5_wells_used, args.p7_wells_used)
-
+        programmed_pcr_combos = get_programmed_pcr_combos_wells(args.p5_wells_used, args.p7_wells_used)
+    print(programmed_pcr_combos)
     # Define where all sequences are and what the whitelists are
 
     if args.level == "3":
@@ -363,11 +367,6 @@ if __name__ == '__main__':
             p5 = entry['p5']
             p7 = entry['p7']
     
-            if (p5, p7) in read_pair_dict:
-                read_pair_dict[(p5, p7)] += 1
-            else:
-                read_pair_dict[(p5, p7)] = 1
-
             ## Choose between the _8 and _9 options based on which correct properly
             corrected_9 = entry['ligation_9'] is not None and entry['rt_9'] is not None
             corrected_10 = entry['ligation_10'] is not None and entry['rt_10'] is not None
@@ -406,6 +405,11 @@ if __name__ == '__main__':
             sample = sample_rt_lookup[rt_barcode]
             sample_read_number = sample_read_counts[sample] + 1
             sample_read_counts[sample] += 1
+
+            if (p5, p7) in read_pair_dict:
+                read_pair_dict[(p5, p7)] += 1
+            else:
+                read_pair_dict[(p5, p7)] = 1
 
             if ligation_barcode in lig_dict:
                 lig_dict[ligation_barcode] += 1

@@ -166,9 +166,10 @@ fastqs.into { fastqs_path1; fastqs_path2 }
 
 process seg_sample_fastqs1 {
     cache 'lenient'
-    module 'java/latest:modules:modules-init:modules-gs:python/3.6.4:pigz/2.3'
+    module 'java/latest:modules:modules-init:modules-gs:python/3.6.4:zlib/1.2.6:pigz/2.3'
+    penv 'serial'
     memory '1 GB'
-    cpus '8'   
+    cpus 8 
 
     input:
         set file(R1), file(R2) from fastqs_path1
@@ -178,7 +179,7 @@ process seg_sample_fastqs1 {
         file "demux_out/*" into seg_output1
         file "demux_out/*.fastq.gz" into samp_fastqs_check1 mode flatten
         file "demux_out/*.stats.json" into json_stats1 mode flatten
-        file "demux_out/*.csv" into csv_stats1 mode flatten
+        file "demux_out/*.csv" into csv_stats1
     
     when:
         !params.large
@@ -211,7 +212,7 @@ process demux_dash1 {
         file jsons from json_stats1
         file sample_sheet_file2
     output:
-        file demux_dash1
+        file "demux_dash" into demux_dash1
 
     """
     mkdir demux_dash
@@ -233,9 +234,10 @@ process demux_dash1 {
 
 process seg_sample_fastqs2 {
     cache 'lenient'
-    module 'java/latest:modules:modules-init:modules-gs:python/3.6.4:pigz/2.3'
+    module 'java/latest:modules:modules-init:modules-gs:python/3.6.4:zlib/1.2.6:pigz/2.3'
     memory '1 GB'    
-
+    penv 'serial'
+    cpus 8
     input:
         set file(R1), file(R2) from fastqs_path2.splitFastq(by: params.fastq_chunk_size, file: true, pe: true)
         file sample_sheet_file3
@@ -258,7 +260,7 @@ process seg_sample_fastqs2 {
         --p5_wells_used $params.p5_wells --p7_wells_used $params.p7_wells \
         --rt_barcode_file $params.rt_barcode_file \
         --output_dir ./demux_out --level $params.level
-    gzip demux_out/*.fastq
+    pigz -p 8 demux_out/*.fastq    
     """    
 }
 

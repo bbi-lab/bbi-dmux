@@ -170,7 +170,8 @@ process seg_sample_fastqs1 {
     penv 'serial'
     memory '1 GB'
     cpus 8 
-
+    publishDir  path: "${params.output_dir}/demux_out", pattern: "*.fastq.gz", mode: 'move'    
+    
     input:
         set file(R1), file(R2) from fastqs_path1
         file sample_sheet_file1

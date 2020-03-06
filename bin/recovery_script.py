@@ -329,7 +329,7 @@ def make_undetermined_dict_2lvl(read_file, out_file):
             p7 = barcs.split("+")[0]
             p5 = barcs.split("+")[1].split("|")[0]
             r1 = barcs.split("|")[1]
-            rt = r1[8:19]
+            rt = r1[8:18]
             read_res['umi_value'] = r1[0:8]
             if rt in rt2_whitelist[0].keys() or rt in rt2_whitelist[1].keys():
                 read_res["rt_result"] = "OK"

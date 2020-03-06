@@ -94,10 +94,10 @@ The sample sheet should be a csv with 3 columns: RT Barcode, Sample ID, and Refe
 
 ```
 RT Barcode,Sample ID,Reference Genome
-2P9-A01,Sample1,Mouse
-2P9-A02,Sample1,Mouse
-2P9-A03,Sample2,Human
-2P9-A04,Sample2,Human
+2P09-A01,Sample1,Mouse
+2P09-A02,Sample1,Mouse
+2P09-A03,Sample2,Human
+2P09-A04,Sample2,Human
 ```
 
 #### Configuration file:

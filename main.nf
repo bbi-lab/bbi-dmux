@@ -170,7 +170,7 @@ process seg_sample_fastqs1 {
     penv 'serial'
     memory '1 GB'
     cpus 8 
-    publishDir  path: "${params.output_dir}/demux_out", pattern: "*.fastq.gz", mode: 'move'    
+    publishDir path: "${params.output_dir}/", pattern: "demux_out/*fastq.gz", mode: 'move'     
     
     input:
         set file(R1), file(R2) from fastqs_path1
@@ -209,8 +209,8 @@ process demux_dash1 {
     publishDir path: "${params.output_dir}/", pattern: "demux_dash", mode: 'copy'
 
     input:
-        file demux_stats_csvs from csv_stats1
-        file jsons from json_stats1
+        file demux_stats_csvs from csv_stats1.collect()
+        file jsons from json_stats1.collect()
         file sample_sheet_file2
     output:
         file "demux_dash" into demux_dash1

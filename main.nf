@@ -170,15 +170,17 @@ process seg_sample_fastqs1 {
     penv 'serial'
     memory '1 GB'
     cpus 8 
-    publishDir path: "${params.output_dir}/", pattern: "demux_out/*fastq.gz", mode: 'move'     
-    
+    publishDir path: "${params.output_dir}/", pattern: "demux_out/*fastq.gz", mode: 'link'     
+    publishDir  path: "${params.output_dir}/demux_out/", pattern: "*.csv", mode: 'copy'
+    publishDir  path: "${params.output_dir}/demux_out/", pattern: "*.json", mode: 'copy'
+
     input:
         set file(R1), file(R2) from fastqs_path1
         file sample_sheet_file1
 
     output:
         file "demux_out/*" into seg_output1
-        file "demux_out/*.fastq.gz" into samp_fastqs_check1 mode flatten
+        file "demux_out/*.fastq.gz" into samp_fastqs_check1
         file "demux_out/*.stats.json" into json_stats1 mode flatten
         file "demux_out/*.csv" into csv_stats1
     

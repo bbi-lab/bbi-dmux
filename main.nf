@@ -464,16 +464,15 @@ save_recovery = {params.output_dir + "/recovery_output/" +  it - ~/.fastq.gz.txt
 process run_recovery {
     module 'modules:java/latest:modules-init:modules-gs:python/3.6.4'
     memory '4 GB'
-
-    publishDir path: "${params.output_dir}/recovery_output", saveAs: save_recovery, pattern: "*.gz.txt", mode: 'move'
-    publishDir path: "${params.output_dir}/recovery_output", saveAs: save_recovery2, pattern: "*-summary.txt", mode: 'move'
+    publishDir path: "${params.output_dir}/recovery_output", saveAs: save_recovery, pattern: "*.gz.txt", mode: 'link'
+    publishDir path: "${params.output_dir}/recovery_output", saveAs: save_recovery2, pattern: "*-summary.txt", mode: 'link'
     input:
         file input from Channel.fromPath("${params.demux_out}/Undetermined*")
         file sample_sheet_file5
 
     output:
         file "*.txt"
-
+        file "*summary.txt" into summaries
     when:
         params.run_recovery
 
@@ -485,11 +484,45 @@ process run_recovery {
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
         --level $params.level \
         --rt_barcodes $params.rt_barcode_file
+
+    """
+
+}
+
+process sum_recovery {
+    module 'modules:java/latest:modules-init:modules-gs:python/3.6.4'
+    memory '4 GB'
+    publishDir path: "${params.output_dir}/demux_dash/js/", pattern: "recovery_summary.js", mode: 'move'
+
+    input:
+        file summary from summaries.collect()
+
+
+    output: 
+        file "*summary.js"
+
+    """
+   echo "const log_data = {" > recovery_summary.js
+   for file in $summary
+   do
+     filename=\$(basename \$file); 
+     part=\${filename/Undetermined-L00/};
+     lane=\${part/.fastq.gz-summary.txt/};   
+     printf "\$lane : \\`" >> recovery_summary.js;
+     cat \$file >> recovery_summary.js;
+     printf "\\`," >> recovery_summary.js;
+   done
+   echo "}" >> recovery_summary.js   
+
+
     """
 
 
-
 }
+
+
+
+
 
 
 

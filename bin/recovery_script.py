@@ -101,40 +101,40 @@ def make_undetermined_dict_3lvl(read_file, out_file):
             lig_10 = r1[0:10]
             read_res['umi_9_value'] = r1[15:23]
             read_res['umi_10_value'] = r1[16:24]
-            if rt_9 in rt3_whitelist[0].keys() or rt_9 in rt3_whitelist[1].keys():
+            if rt_9 in rt3_whitelist[0] or rt_9 in rt3_whitelist[1]:
                 read_res["rt_9_result"] = "OK"
-                if rt_9 in rt3_whitelist[1].keys():
+                if rt_9 in rt3_whitelist[1]:
                     rt_9 = rt3_whitelist[1][rt_9]
                 rt_9 = rt3_lookup[rt_9]
                 read_res["rt_9_value"] = rt_9
-                if rt_9 in sample_rt_lookup.keys():
+                if rt_9 in sample_rt_lookup:
                     read_res["sample_assign_9"] = sample_rt_lookup[rt_9]
             else:
                 read_res["rt_9_result"] = "Bad RT"
                 read_res["rt_9_value"] = rt_9
-            if rt_10 in rt3_whitelist[0].keys() or rt_10 in rt3_whitelist[1].keys():
+            if rt_10 in rt3_whitelist[0] or rt_10 in rt3_whitelist[1]:
                 read_res["rt_10_result"] = "OK"
-                if rt_10 in rt3_whitelist[1].keys():
+                if rt_10 in rt3_whitelist[1]:
                     rt_10 = rt3_whitelist[1][rt_10]
                 rt_10 = rt3_lookup[rt_10]
                 read_res["rt_10_value"] = rt_10
-                if rt_10 in sample_rt_lookup.keys():
+                if rt_10 in sample_rt_lookup:
                     read_res["sample_assign_10"] = sample_rt_lookup[rt_10]
             else:
                 read_res["rt_10_result"] = "Bad RT"
                 read_res["rt_10_value"] = rt_10
-            if lig_9 in lig_9_whitelist[0].keys() or lig_9 in lig_9_whitelist[1].keys():
+            if lig_9 in lig_9_whitelist[0] or lig_9 in lig_9_whitelist[1]:
                 read_res["lig_9_result"] = "OK"
-                if lig_9 in lig_9_whitelist[1].keys():
+                if lig_9 in lig_9_whitelist[1]:
                     lig_9 = lig_9_whitelist[1][lig_9]
                 lig_9 = lig_9_lookup[lig_9]
                 read_res["lig_9_value"] = lig_9
             else:
                 read_res["lig_9_result"] = "Bad Lig"
                 read_res["lig_9_value"] = lig_9
-            if lig_10 in lig_10_whitelist[0].keys() or lig_10 in lig_10_whitelist[1].keys():
+            if lig_10 in lig_10_whitelist[0] or lig_10 in lig_10_whitelist[1]:
                 read_res["lig_10_result"] = "OK"
-                if lig_10 in lig_10_whitelist[1].keys():
+                if lig_10 in lig_10_whitelist[1]:
                     lig_10 = lig_10_whitelist[1][lig_10]
                 lig_10 = lig_10_lookup[lig_10]
                 read_res["lig_10_value"] = lig_10
@@ -167,17 +167,17 @@ def make_undetermined_dict_3lvl(read_file, out_file):
             else:
                 read_type = "Ambiguous"
             read_res['read_type'] = read_type
-            if p5 in p5_whitelist[0].keys() or p5 in p5_whitelist[1].keys():
+            if p5 in p5_whitelist[0] or p5 in p5_whitelist[1]:
                 read_res["p5_result"] = "OK"
-                if p5 in p5_whitelist[1].keys():
+                if p5 in p5_whitelist[1]:
                     p5 = p5_whitelist[1][p5]
                 p5 = p5_lookup[p5]
             else:
                 read_res["p5_result"] = "Bad p5"
                 read_res["pcr_result"] = "Bad component"
-            if p7 in p7_whitelist[0].keys() or p7 in p7_whitelist[1].keys():
+            if p7 in p7_whitelist[0] or p7 in p7_whitelist[1]:
                 read_res["p7_result"] = "OK"
-                if p7 in p7_whitelist[1].keys():
+                if p7 in p7_whitelist[1]:
                     p7 = p7_whitelist[1][p7]
                 p7 = p7_lookup[p7]
             else:
@@ -186,7 +186,7 @@ def make_undetermined_dict_3lvl(read_file, out_file):
             if not read_res["pcr_result"] == "Bad component":
                 if not (p5, p7) in programmed_pcr_combos:
                     read_res["pcr_result"] = "Barcode mismatch"
-                    if not (p5, p7) in pcr_combo_dict.keys():
+                    if not (p5, p7) in pcr_combo_dict:
                         pcr_combo_dict[(p5, p7)] = 1
                     else:
                         pcr_combo_dict[(p5, p7)] += 1
@@ -209,13 +209,13 @@ def make_undetermined_dict_3lvl(read_file, out_file):
                         sum_dict['multi_wrong'] += 1
                     elif read_res['lig_9_result'] != 'OK':
                         sum_dict['bad_lig'] += 1
-                        if read_res['lig_9_value'] in bad_lig_dict.keys():
+                        if read_res['lig_9_value'] in bad_lig_dict:
                             bad_lig_dict[read_res['lig_9_value']] += 1
                         else:
                             bad_lig_dict[read_res['lig_9_value']] = 1
                     elif read_res['rt_9_result'] != 'OK':
                         sum_dict['bad_rt'] += 1
-                        if read_res['rt_9_value'] in bad_rt_dict.keys():
+                        if read_res['rt_9_value'] in bad_rt_dict:
                             bad_rt_dict[read_res['rt_9_value']] += 1
                         else:
                             bad_rt_dict[read_res['rt_9_value']] = 1
@@ -225,7 +225,7 @@ def make_undetermined_dict_3lvl(read_file, out_file):
                         sum_dict['bad_pcr_comp'] += 1
                     elif read_res['pcr_result'] == "OK" and read_res["sample_assign_9"] == "Unknown":
                         sum_dict['not_in_samp'] += 1
-                        if read_res['rt_9_value'] in not_in_samp_dict.keys():
+                        if read_res['rt_9_value'] in not_in_samp_dict:
                             not_in_samp_dict[read_res['rt_9_value']] += 1
                         else:
                             not_in_samp_dict[read_res['rt_9_value']] = 1
@@ -236,13 +236,13 @@ def make_undetermined_dict_3lvl(read_file, out_file):
                         sum_dict['multi_wrong'] += 1
                     elif read_res['lig_10_result'] != 'OK':
                         sum_dict['bad_lig'] += 1
-                        if read_res['lig_10_value'] in bad_lig_dict.keys():
+                        if read_res['lig_10_value'] in bad_lig_dict:
                             bad_lig_dict[read_res['lig_10_value']] += 1
                         else:
                             bad_lig_dict[read_res['lig_10_value']] = 1
                     elif read_res['rt_10_result'] != 'OK':
                         sum_dict['bad_rt'] += 1
-                        if read_res['rt_10_value'] in bad_rt_dict.keys():
+                        if read_res['rt_10_value'] in bad_rt_dict:
                             bad_rt_dict[read_res['rt_10_value']] += 1
                         else:
                             bad_rt_dict[read_res['rt_10_value']] = 1
@@ -252,7 +252,7 @@ def make_undetermined_dict_3lvl(read_file, out_file):
                         sum_dict['bad_pcr_comp'] += 1
                     elif read_res['pcr_result'] == "OK" and read_res["sample_assign_10"] == "Unknown":
                         sum_dict['not_in_samp'] += 1
-                        if read_res['rt_10_value'] in not_in_samp_dict.keys():
+                        if read_res['rt_10_value'] in not_in_samp_dict:
                             not_in_samp_dict[read_res['rt_10_value']] += 1
                         else:
                             not_in_samp_dict[read_res['rt_10_value']] = 1
@@ -331,28 +331,28 @@ def make_undetermined_dict_2lvl(read_file, out_file):
             r1 = barcs.split("|")[1]
             rt = r1[8:18]
             read_res['umi_value'] = r1[0:8]
-            if rt in rt2_whitelist[0].keys() or rt in rt2_whitelist[1].keys():
+            if rt in rt2_whitelist[0] or rt in rt2_whitelist[1]:
                 read_res["rt_result"] = "OK"
-                if rt in rt2_whitelist[1].keys():
+                if rt in rt2_whitelist[1]:
                     rt = rt2_whitelist[1][rt]
                 rt = rt2_lookup[rt]
                 read_res["rt_value"] = rt
-                if rt in sample_rt_lookup.keys():
+                if rt in sample_rt_lookup:
                     read_res["sample_assign_9"] = sample_rt_lookup[rt]
             else:
                 read_res["rt_result"] = "Bad RT"
                 read_res["rt_value"] = rt
-            if p5 in p5_whitelist[0].keys() or p5 in p5_whitelist[1].keys():
+            if p5 in p5_whitelist[0] or p5 in p5_whitelist[1]:
                 read_res["p5_result"] = "OK"
-                if p5 in p5_whitelist[1].keys():
+                if p5 in p5_whitelist[1]:
                     p5 = p5_whitelist[1][p5]
                 p5 = p5_lookup[p5]
             else:
                 read_res["p5_result"] = "Bad p5"
                 read_res["pcr_result"] = "Bad component"
-            if p7 in p7_whitelist[0].keys() or p7 in p7_whitelist[1].keys():
+            if p7 in p7_whitelist[0] or p7 in p7_whitelist[1]:
                 read_res["p7_result"] = "OK"
-                if p7 in p7_whitelist[1].keys():
+                if p7 in p7_whitelist[1]:
                     p7 = p7_whitelist[1][p7]
                 p7 = p7_lookup[p7]
             else:
@@ -361,7 +361,7 @@ def make_undetermined_dict_2lvl(read_file, out_file):
             if not read_res["pcr_result"] == "Bad component":
                 if not (p5, p7) in programmed_pcr_combos:
                     read_res["pcr_result"] = "Barcode mismatch"
-                    if not (p5, p7) in pcr_combo_dict.keys():
+                    if not (p5, p7) in pcr_combo_dict:
                         pcr_combo_dict[(p5, p7)] = 1
                     else:
                         pcr_combo_dict[(p5, p7)] += 1
@@ -379,7 +379,7 @@ def make_undetermined_dict_2lvl(read_file, out_file):
                 sum_dict['multi_wrong'] += 1
             elif read_res['rt_result'] != 'OK':
                 sum_dict['bad_rt'] += 1
-                if read_res['rt_value'] in bad_rt_dict.keys():
+                if read_res['rt_value'] in bad_rt_dict:
                     bad_rt_dict[read_res['rt_value']] += 1
                 else:
                     bad_rt_dict[read_res['rt_value']] = 1
@@ -389,7 +389,7 @@ def make_undetermined_dict_2lvl(read_file, out_file):
                 sum_dict['bad_pcr_comp'] += 1
             elif read_res['pcr_result'] == "OK" and read_res["sample_assign"] == "Unknown":
                 sum_dict['not_in_samp'] += 1
-                if read_res['rt_value'] in not_in_samp_dict.keys():
+                if read_res['rt_value'] in not_in_samp_dict:
                     not_in_samp_dict[read_res['rt_value']] += 1
                 else:
                     not_in_samp_dict[read_res['rt_value']] = 1

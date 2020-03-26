@@ -191,14 +191,15 @@ for (lane in lane_list) {
               scale_fill_gradient(low = "white", high = "blue"))
       dev.off()
     }
-    if (nrow(bad_well) > 0) {
-      barcode_list <- union(barcode_list, as.character(bad_well$V1))
-      temp <- as.list(bad_well$V2)
-      names(temp) <- bad_well$V1
-      bad_well_list[[length(bad_well_list) + 1]] <- temp
-      names(bad_well_list)[[length(bad_well_list)]] <- gsub("L00", "Lane ", lane)
-    }
   }
+  if (nrow(bad_well) > 0) {
+    barcode_list <- union(barcode_list, as.character(bad_well$V1))
+    temp <- as.list(bad_well$V2)
+    names(temp) <- bad_well$V1
+    bad_well_list[[length(bad_well_list) + 1]] <- temp
+    names(bad_well_list)[[length(bad_well_list)]] <- gsub("L00", "Lane ", lane)
+  }
+ 
   pcr_counts <- read.csv(paste0(lane, ".pcr_counts.csv"), header = F, stringsAsFactors = FALSE)
   if(p5_cols[1] != "none") {
     pcr_counts$p5_row <- substring(pcr_counts$V1, first = 1, last = 1)

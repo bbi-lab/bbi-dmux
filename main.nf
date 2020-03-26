@@ -9,6 +9,7 @@ params.fastq_chunk_size = 100000000
 params.run_recovery = false
 params.rt_barcode_file="default"
 params.large = false
+params.max_cores = 16
 
 params.p5_cols = 0
 params.p7_rows = 0

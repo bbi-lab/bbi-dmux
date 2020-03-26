@@ -32,12 +32,23 @@ def get_programmed_pcr_combos(p5_lookup, p7_lookup, p5_cols_used, p7_rows_used):
         set of (p5, p7): set of (p5, p7) well ID tuples that are valid.
     """
 
+    if p5_cols_used == ["none"]:
+        p5_cols_used = p5_cols_used * len(p7_rows_used)
+    if p7_rows_used == ["none"]:
+        p7_rows_used = p7_rows_used * len(p5_cols_used)
+
     valid_combos = set()
-
     for p5, p7 in zip(p5_cols_used, p7_rows_used):
+ 
+        if p7 == "none":
+            selected_p7 = ["none"]
+        else:
+            selected_p7 = [p7_well for p7_well in p7_lookup.values() if p7_well[0] == p7 or p7_well == p7]
 
-        selected_p5 = [p5_well for p5_well in p5_lookup.values() if int(p5_well[1:]) == p5]
-        selected_p7 = [p7_well for p7_well in p7_lookup.values() if p7_well[0] == p7]
+        if p5 == "none":
+            selected_p5 = ["none"]
+        else:   
+            selected_p5 = [p5_well for p5_well in p5_lookup.values() if int(p5_well[1:]) == p5 or p5_well == p5]
 
         for selected_p5_i in selected_p5:
             for selected_p7_i in selected_p7:
@@ -58,8 +69,15 @@ def get_programmed_pcr_combos_wells(p5_wells_used, p7_wells_used):
     good_nums = {1:"01", 2:"02", 3:"03", 4:"04", 5:"05", 6:"06", 7:"07", 8:"08", 9:"09", 10:"10", 11:"11", 12:"12"}
 
     valid_combos = set()
-    p5_wells_fixed = [p5_well[0] + good_nums[int(p5_well[1:])] for p5_well in p5_wells_used]
-    p7_wells_fixed = [p7_well[0] + good_nums[int(p7_well[1:])] for p7_well in p7_wells_used]
+    if p5_wells_used == ["none"]:
+        p5_wells_fixed = p5_wells_used * len(p7_wells_used)
+    else:
+        p5_wells_fixed = [p5_well[0] + good_nums[int(p5_well[1:])] for p5_well in p5_wells_used]
+    if p7_wells_used == ["none"]:
+        p7_wells_fixed = p7_wells_used * len(p5_wells_used)
+    else:
+        p7_wells_fixed = [p7_well[0] + good_nums[int(p7_well[1:])] for p7_well in p7_wells_used]
+    
     for selected_p5, selected_p7 in zip(p5_wells_fixed, p7_wells_fixed):
         valid_combos.add((selected_p5, selected_p7))
 
@@ -209,7 +227,7 @@ if __name__ == '__main__':
     parser.add_argument('--read2', nargs='?', type=argparse.FileType('r'), default=sys.stdin, required=True, help='Text piped in from stdin for R2.')
     parser.add_argument('--file_name', required=True, help='The R1 file name.')
     parser.add_argument('--sample_layout', required=True, help='Text file containing the sample layout by RT well.')
-    parser.add_argument('--p5_cols_used', nargs='+', type=int, required=True, help='A list of the columns used from P5 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A B C for p7 and --p5 1 2 3 for p5.')
+    parser.add_argument('--p5_cols_used', nargs='+', required=True, help='A list of the columns used from P5 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A B C for p7 and --p5 1 2 3 for p5.')
     parser.add_argument('--p7_rows_used', nargs='+', required=True, help='A list of the rows used from P7 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A B C for p7 and --p5 1 2 3 for p5.')
     parser.add_argument('--p5_wells_used', nargs='+', required=True, help='A list of the wells used from P5 plate for PCR in same order as P7 to indicate the pairs of P7 and P5 used (e.g. --p7 A1 B1 C1 for p7 and --p5 A1 A2 A3 for p5. Alternative to p5_cols_used.')
     parser.add_argument('--p7_wells_used', nargs='+', required=True, help='A list of the wells used from P7 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A1 B1 C1 for p7 and --p5 A1 A2 A3 for p5. Alternative to p7_rows_used.')
@@ -219,6 +237,19 @@ if __name__ == '__main__':
     parser.add_argument('--level', required=True, help = "2 or 3 level sci?")
     parser.add_argument('--rt_barcode_file', required=True, help='Path to RT barcode file, or "default".')
     args = parser.parse_args()
+
+    if args.p5_cols_used == ["none"] or args.p5_wells_used == ["none"]:
+        p5_none = True
+    else:
+        p5_none = False
+
+    if args.p7_rows_used == ["none"] or args.p7_wells_used == ["none"]:
+        p7_none = True
+    else:
+        p7_none = False
+ 
+    if not p5_none:
+        args.p5_cols_used = [int(x) for x in args.p5_cols_used]
 
     if args.rt_barcode_file == "default":
         if args.level == "3":
@@ -256,9 +287,26 @@ if __name__ == '__main__':
     else:
         programmed_pcr_combos = get_programmed_pcr_combos_wells(args.p5_wells_used, args.p7_wells_used)
     # Define where all sequences are and what the whitelists are
-
-    if args.level == "3":
-        barcode_spec = {
+    if p5_none:
+        pcr_spec = {
+            'p7': {
+                'start': 1,
+                'end': args.p7_length,
+                'read': 'i7',
+                'whitelist': p7_lookup
+             }
+        }
+    elif p7_none:
+        pcr_spec = {
+            'p5': {
+                'start': 1,
+                'end': args.p5_length,
+                'read': 'i5',
+                'whitelist': p5_lookup
+             }
+        }
+    else:
+        pcr_spec = {
             'p5': {
                 'start': 1,
                 'end':  args.p5_length,
@@ -270,7 +318,10 @@ if __name__ == '__main__':
                 'end': args.p7_length,
                 'read': 'i7',
                 'whitelist': p7_lookup
-            },
+            }
+        }
+    if args.level == "3":
+        barcode_spec = {
             'ligation_9': {
                 'start': 1,
                 'end': 9,
@@ -308,18 +359,6 @@ if __name__ == '__main__':
         }
     else:
         barcode_spec = {
-            'p5': {
-                'start': 1,
-                'end':  args.p5_length,
-                'read': 'i5',
-                'whitelist': p5_lookup
-            },
-            'p7': {
-                'start': 1,
-                'end': args.p7_length,
-                'read': 'i7',
-                'whitelist': p7_lookup
-            },
             'umi': {
                 'start': 1,
                 'end': 8,
@@ -332,7 +371,7 @@ if __name__ == '__main__':
                 'whitelist': rtfile
             }  
         }
-
+    barcode_spec.update(pcr_spec)
   # Set up the output files
     sample_rt_lookup = load_sample_layout(args.sample_layout)
     undetermined = open(os.path.join(args.output_dir, '%s-%s' % ("Undetermined", suffix)), 'w')
@@ -362,13 +401,19 @@ if __name__ == '__main__':
             total_reads += 1
 
             # Only allow the programmed PCR combos (helps clean things up a bit)
-            p5 = entry['p5']
-            p7 = entry['p7']
+            if not p5_none:
+                p5 = entry['p5']
+            else:
+                p5 = "none"
+            if not p7_none:
+                p7 = entry['p7']
+            else:
+                p7 = "none"
     
             ## Choose between the _8 and _9 options based on which correct properly
             corrected_9 = entry['ligation_9'] is not None and entry['rt_9'] is not None
             corrected_10 = entry['ligation_10'] is not None and entry['rt_10'] is not None
-            corrected_p5_p7 = p5 is not None and p7 is not None
+            corrected_p5_p7 = (p5_none or p5 is not None) and (p7_none or p7 is not None)
 
             if corrected_9 and corrected_10:
                 total_ambiguous_ligation_length += 1

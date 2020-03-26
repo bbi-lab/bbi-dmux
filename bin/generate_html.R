@@ -26,14 +26,32 @@ lane_nums <- gsub("L00", "", lane_list)
 well_fix <- list("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
 
 if (args$p7_rows != 0) {
-  p7_rows <- unlist(stringr::str_split(args$p7_rows, " "))
-  p5_cols <- unlist(stringr::str_split(args$p5_cols, " "))
+  if (args$p7_rows != "none") {
+    p7_rows <- unlist(stringr::str_split(args$p7_rows, " "))
+  } else {
+    p7_rows <- "none"
+  } 
+  if (args$p5_cols != "none") {
+    p5_cols <- unlist(stringr::str_split(args$p5_cols, " "))
+  } else {
+    p5_cols <- "none"
+  }
+  
   well_wise <- FALSE
 } else {
-  p7_rows <- unlist(stringr::str_split(args$p7_wells, " "))
-  p5_cols <- unlist(stringr::str_split(args$p5_wells, " "))
-  p7_rows <- paste0(substr(p7_rows, start=1, stop=1), well_fix[as.numeric(substr(p7_rows, start = 2, stop=3))])
-  p5_cols <- paste0(substr(p5_cols, start=1, stop=1), well_fix[as.numeric(substr(p5_cols, start = 2, stop=3))])
+  if (args$p7_wells != "none") {
+    p7_rows <- unlist(stringr::str_split(args$p7_wells, " "))
+    p7_rows <- paste0(substr(p7_rows, start=1, stop=1), well_fix[as.numeric(substr(p7_rows, start = 2, stop=3))])
+  } else {
+    p7_rows <- "none"
+  }
+  if (args$p5_wells != "none") {
+    p5_cols <- unlist(stringr::str_split(args$p5_wells, " "))
+    p5_cols <- paste0(substr(p5_cols, start=1, stop=1), well_fix[as.numeric(substr(p5_cols, start = 2, stop=3))])
+  } else {
+    p5_cols <- "none"
+  }
+  
   well_df <- data.frame(p5 = p5_cols, p7=p7_rows)
   well_wise <- TRUE
   
@@ -64,7 +82,7 @@ for (lane in lane_list) {
   cols <- 1:12
   plate <- data.frame(expand.grid(cols, rows))
   levels(plate$Var2) <- rev(levels(plate$Var2))
-
+  
   rt_counts <- read.csv(paste0(lane, ".rt_counts.csv"), header = F, stringsAsFactors = FALSE)
   rt_counts$plate <- stringr::str_split_fixed(rt_counts$V1, "-", 2)[,1]
   rt_counts$well <- stringr::str_split_fixed(rt_counts$V1, "-", 2)[,2]
@@ -182,15 +200,46 @@ for (lane in lane_list) {
     }
   }
   pcr_counts <- read.csv(paste0(lane, ".pcr_counts.csv"), header = F, stringsAsFactors = FALSE)
-  pcr_counts$p5_row <- substring(pcr_counts$V1, first = 1, last = 1)
-  pcr_counts$p5_col <- as.numeric(substring(pcr_counts$V1, first = 2,
-                                            last = nchar(pcr_counts$V1)))
+  if(p5_cols[1] != "none") {
+    pcr_counts$p5_row <- substring(pcr_counts$V1, first = 1, last = 1)
+    pcr_counts$p5_col <- as.numeric(substring(pcr_counts$V1, first = 2,
+                                              last = nchar(pcr_counts$V1)))
+  }
   
-  pcr_counts$p7_row <- substring(pcr_counts$V2, first = 1, last = 1)
-  pcr_counts$p7_col <- as.numeric(substring(pcr_counts$V2, first = 2,
-                                            last = nchar(pcr_counts$V2)))
-  
-  if (!well_wise) {
+  if (p7_rows[1] != "none") {
+    pcr_counts$p7_row <- substring(pcr_counts$V2, first = 1, last = 1)
+    pcr_counts$p7_col <- as.numeric(substring(pcr_counts$V2, first = 2,
+                                              last = nchar(pcr_counts$V2)))
+  }
+  if (p7_rows[1] == "none" || p5_cols[1] == "none") {
+    pcr_plate_list <- c()
+    rel_barc <- ifelse(p7_rows == "none", "p5", "p7")
+    if(p7_rows[1] == "none") {
+      pcr_counts$rows <- substring(pcr_counts$V1, first = 1, last = 1)
+      pcr_counts$cols <- as.numeric(substring(pcr_counts$V1, first = 2,
+                                              last = nchar(pcr_counts$V1)))
+    } else {
+      pcr_counts$rows <- substring(pcr_counts$V2, first = 1, last = 1)
+      pcr_counts$cols <- as.numeric(substring(pcr_counts$V2, first = 2,
+                                              last = nchar(pcr_counts$V2)))
+    }
+    p5_df <- data.frame(rows = pcr_counts$rows,
+                        cols = pcr_counts$cols, ReadCount = pcr_counts$V3)
+    data <- merge(plate, p5_df, by.x=c("Var1", "Var2"),
+                  by.y=c("cols", "rows"), all.x=T)
+    data$ReadCount[is.na(data$ReadCount)] <- 0
+    
+    data$outlier <- data$ReadCount < 0.01 * median(data$ReadCount)
+    pcr_plate_list <- c(pcr_plate_list, paste0(rel_barc))
+    png(file = paste0("demux_dash/img/", lane,"_",rel_barc, ".pcr_plate.png"), width = 6, height = 4, res = 200, units = "in")
+    print(ggplot(aes(as.factor(Var1), Var2, fill = ReadCount, color=outlier, stroke=outlier), data = data) +
+            geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
+            scale_fill_gradient(low = "white", high = "blue") + scale_color_manual(values=c("black", "red"), guide=FALSE) +
+            scale_discrete_manual(aesthetics = "stroke", values = c(0.5,1), guide=FALSE
+            ))
+    dev.off()
+    well_df_lane <- data.frame()
+  } else if (!well_wise) {
     pcr_plate_list <- c()
     for (i in  1:length(p7_rows)) {
       sub <- subset(pcr_counts, p7_row == p7_rows[i] & p5_col == as.numeric(p5_cols[i]))
@@ -211,6 +260,7 @@ for (lane in lane_list) {
       dev.off()
       well_df_lane <- data.frame()
     }
+    
   } else {
     pcr_plate_list <- c()
     well_df_lane <- merge(well_df, pcr_counts[,c("V1", "V2", "V3")], by.x=c("p5", "p7"), by.y=c("V1", "V2"))
@@ -218,7 +268,7 @@ for (lane in lane_list) {
   }
   well_df_list[[lane]] <- well_df_lane
 }
-  
+
 outtab <- lapply(lane_list, function(x) {
   sumstats <- jsonlite::fromJSON(paste0(x, ".stats.json"))
   list("Lane" = gsub("L00", "Lane ", x),
@@ -231,8 +281,8 @@ outtab <- lapply(lane_list, function(x) {
   )
 })
 if(well_wise) {
- well_df_out <- Reduce(function(df1, df2) merge(df1, df2, by = c("p5", "p7")),
-        well_df_list)
+  well_df_out <- Reduce(function(df1, df2) merge(df1, df2, by = c("p5", "p7")),
+                        well_df_list)
 } else {
   well_df_out <- data.frame()
 }
@@ -252,4 +302,4 @@ json_info <- list("run_name" = args$project_name,
 fileConn<-file("demux_dash/js/run_data.js")
 writeLines(c("const run_data =", toJSON(json_info, pretty=TRUE)), fileConn)
 close(fileConn)
-  
+

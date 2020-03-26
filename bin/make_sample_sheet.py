@@ -12,7 +12,7 @@ SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 P5_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/p5.txt')
 P7_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/p7.txt')
 
-def get_sample_sheet_text(p5_index_length, p7_index_length):
+def get_sample_sheet_text(p7_index_length, p5_index_length):
     """
     Gets the sample sheet text that will demux cells into one set of files
     """

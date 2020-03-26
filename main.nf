@@ -64,9 +64,9 @@ if (!params.run_dir || !params.output_dir || !params.sample_sheet ) {
     exit 1, "Must include config file using -c CONFIG_FILE.config that includes output_dir, sample_sheet and run_dir."
 }
 
-if (!(params.p7_rows && params.p5_cols) && !(params.p7_wells && params.p5_wells)) {
-    exit 1, "Must include config file using -c CONFIG_FILE.config that includes p7_rows and p5_cols or p5_wells and p7_wells"
-}
+//if (!(params.p7_rows && params.p5_cols) && !(params.p7_wells && params.p5_wells)) {
+//    exit 1, "Must include config file using -c CONFIG_FILE.config that includes p7_rows and p5_cols or p5_wells and p7_wells"
+//}
 
 star_file = file(params.star_file)
 
@@ -482,6 +482,7 @@ process run_recovery {
         --run_directory $params.run_dir \
         --sample_layout $sample_sheet_file5 \
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
+        --p5_wells_used $params.p5_wells --p7_wells_used $params.p7_wells \
         --level $params.level \
         --rt_barcodes $params.rt_barcode_file
 

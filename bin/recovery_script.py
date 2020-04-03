@@ -625,7 +625,6 @@ if __name__ == '__main__':
         p7_whitelist = ["none", "no_correct"]
         p7_lookup = {"none":"none"}
     else:
-
         p7_lookup = bu.load_whitelist(P7_FILE)
         p7_lookup = {sequence[0:args.p7_length]: well for sequence,well in p7_lookup.items()}
         p7_whitelist = bu.construct_mismatch_to_whitelist_map(p7_lookup, edit_distance = 1)
@@ -634,11 +633,11 @@ if __name__ == '__main__':
         p5_whitelist = ["none", "no_correct"]
         p5_lookup = {"none":"none"}
     else:
-        p5_whitelist = bu.construct_mismatch_to_whitelist_map(p5_lookup, edit_distance = 1)
         p5_lookup = bu.load_whitelist(P5_FILE)
         if reverse_complement_i5(args.run_directory):
             p5_lookup = {bu.reverse_complement(sequence): well for sequence,well in p5_lookup.items()}
         p5_lookup = {sequence[0:args.p5_length]: well for sequence,well in p5_lookup.items()}
+        p5_whitelist = bu.construct_mismatch_to_whitelist_map(p5_lookup, edit_distance = 1)
 
 
     if args.p5_cols_used != [0]:

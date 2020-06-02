@@ -40,12 +40,13 @@ module load drmaa/latest
 module load git/latest
 ```
 
-After loading the above modules, you must install the following python package:
+After loading the above modules, you must install the following python packages:
 
 ```
 pip install --user drmaa
 pip install --user biopython
 pip install --user fmt
+pip install --user pysam
 
 git clone https://github.com/andrewhill157/barcodeutils.git
 cd barcodeutils
@@ -103,7 +104,7 @@ RT Barcode,Sample ID,Reference Genome
 #### Configuration file:
 The second thing you need is a config file which passes in your arguments to the pipeline. This file is very helpful as it allows you to specify if your data is 2-level or 3-level, allocate memory requirements, process only a subset of your samples and use custom genomes to map your data. We highly recommend using this instead of passing arguments on the command line so that you have a record of the run you called.
 
-An example configuration file is included in the package and includes further information on usage.
+##### An example configuration file is included in the package and includes further information on usage.
 
 For Shendure lab cluster
 ```

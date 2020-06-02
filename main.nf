@@ -10,6 +10,7 @@ params.run_recovery = false
 params.rt_barcode_file="default"
 params.large = false
 params.max_cores = 16
+params.max_wells_per_sample = 20
 
 params.p5_cols = 0
 params.p7_rows = 0
@@ -54,6 +55,7 @@ if (params.help) {
     log.info '    params.fastq_chunk_size = 100000000        The number of reads that should be processed together for demultiplexing.'
     log.info '    params.bcl_max_mem = 40                    The maximum number of GB of RAM to assign for bcl2fastq'
     log.info '    params.large = false                       Is this a very large run? If true, the fastqs will be split - note that for smaller runs this will make the pipeline run more slowly.'
+    log.info '    params.max_wells_per_sample = 20           The maximum number of wells per sample - if a sample is in more wells, the fastqs will be split then reassembled.'
     log.info '    --run_recovery true                        Add this to run the recovery script AFTER running the normal pipeline.'
     log.info ''
     log.info 'Issues? Contact hpliner@uw.edu'
@@ -83,7 +85,7 @@ process check_sample_sheet {
         file "*.csv" into good_sample_sheet
 
     """
-    check_sample_sheet.py --sample_sheet $params.sample_sheet --star_file $star_file --level $params.level --rt_barcode_file $params.rt_barcode_file
+    check_sample_sheet.py --sample_sheet $params.sample_sheet --star_file $star_file --level $params.level --rt_barcode_file $params.rt_barcode_file --max_wells_per_samp $params.max_wells_per_sample    
     """
 }
 

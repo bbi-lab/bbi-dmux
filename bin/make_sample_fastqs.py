@@ -216,7 +216,7 @@ def write_to_undetermined(entry):
     output_name = entry['r1_name'] + "|" + entry['r1_seq']
     r2_seq = entry['r2_seq']
     r2_qual = entry['r2_qual']
-    output_line = f'{output_name}\n{r2_seq}\n+\n{r2_qual}\n'
+    output_line = f'@{output_name}\n{r2_seq}\n+\n{r2_qual}\n'
     undetermined.write(output_line)
 
 if __name__ == '__main__':
@@ -540,6 +540,7 @@ if __name__ == '__main__':
                 continue
 
             sample = sample_rt_lookup[rt_barcode]
+            sample_read_name = sample.split(".fq.part")[0]
             sample_read_number = sample_read_counts[sample] + 1
             sample_read_counts[sample] += 1
 
@@ -550,7 +551,7 @@ if __name__ == '__main__':
 
             r2_qual = entry['r2_qual']
             r2_seq = entry['r2_seq']
-            output_name = f'@{sample}-P7{p5}-P5{p7}_{sample_read_number}|{sample}|{p5}|{p7}|{rt_barcode}|{umi}'
+            output_name = f'@{sample_read_name}-P7{p5}-P5{p7}_{sample_read_number}|{sample_read_name}|{p5}|{p7}|{rt_barcode}|{umi}'
             output_line = f'{output_name}\n{r2_seq}\n+\n{r2_qual}\n'
             sample_to_output_file_lookup[sample].write(output_line)
 

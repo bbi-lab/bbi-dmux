@@ -124,7 +124,7 @@ def make_undetermined_dict_3lvl(read_file, out_file):
     read_result = []
     pcr_combo_dict = dict()
     fo = open(out_file, "w")
-    fo.write("read_type\trt_9_result\trt_9_value\trt_10_result\trt_10_value\tsample_assign_9\tsample_assign_10\tlig_9_result\tlig_9_value\tlig_10_result\tlig_10_value\tp5_result\tp7_result\tumi_9_value\tumi_10_value\tpcr_result\n")
+    fo.write("read_type\trt_9_result\trt_9_value\trt_10_result\trt_10_value\tsample_assign_9\tsample_assign_10\tlig_9_result\tlig_9_value\tlig_10_result\tlig_10_value\tp5_result\tp7_result\tumi_9_value\tumi_10_value\tpcr_result\tread_name\n")
     sum_dict = {'total_reads':0, 'amb_length':0, 'multi_wrong':0, 'bad_lig':0, 'bad_rt':0, 'pcr_mismatch':0, 'bad_pcr_comp':0, 'not_in_samp':0, 'unassigned':0}
 
     with open(read_file, 'rt') as f:
@@ -134,6 +134,7 @@ def make_undetermined_dict_3lvl(read_file, out_file):
             line1 = f.readline()
             if not line1:
                 break
+            read_name = line1.split(" ")[0]
             read_res = {'read_type': "Unknown", 'sample_assign_9': "Unknown", 'sample_assign_10': "Unknown", 'rt_9_result': "Unknown", 'rt_9_value': "Unknown", 'rt_10_result': "Unknown", 'rt_10_value': "Unknown", 'lig_9_result': "Unknown", 'lig_9_value': "Unknown", 'lig_10_result': "Unknown", 'lig_10_value': "Unknown", 'p7_result': "Unknown", 'umi_9_value': "Unknown", 'umi_10_value': "Unknown", 'pcr_result': "Unknown"}
             barcs = line1.strip().split(" ")[1].split(":")[3]
             if p5_none:
@@ -246,11 +247,11 @@ def make_undetermined_dict_3lvl(read_file, out_file):
             r2 = f.readline()
             r3 = f.readline()
             r4 = f.readline()
-            fo.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(read_res['read_type'],\
+            fo.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(read_res['read_type'],\
             read_res['rt_9_result'],read_res['rt_9_value'],read_res['rt_10_result'],read_res['rt_10_value'],\
             read_res['sample_assign_9'],read_res['sample_assign_10'],read_res['lig_9_result'],read_res['lig_9_value'],\
             read_res['lig_10_result'],read_res['lig_10_value'],read_res['p5_result'],read_res['p7_result'],\
-            read_res['umi_9_value'],read_res['umi_10_value'],read_res['pcr_result']))
+            read_res['umi_9_value'],read_res['umi_10_value'],read_res['pcr_result'],read_name))
             sum_dict['total_reads'] += 1
             if read_res['read_type'] == "Unknown" or read_res['read_type'] == "Ambiguous":
                 sum_dict['amb_length'] += 1
@@ -365,7 +366,7 @@ def make_undetermined_dict_2lvl(read_file, out_file):
     read_result = []
     pcr_combo_dict = dict()
     fo = open(out_file, "w")
-    fo.write("rt_result\trt_value\tsample_assign\tp5_result\tp7_result\tumi_value\tpcr_result\n")
+    fo.write("rt_result\trt_value\tsample_assign\tp5_result\tp7_result\tumi_value\tpcr_result\tread_name\n")
     sum_dict = {'total_reads':0, 'multi_wrong':0, 'bad_rt':0, 'pcr_mismatch':0, 'bad_pcr_comp':0, 'not_in_samp':0, 'unassigned':0}
 
     with open(read_file, 'rt') as f:
@@ -375,6 +376,7 @@ def make_undetermined_dict_2lvl(read_file, out_file):
             line1 = f.readline()
             if not line1:
                 break
+            read_name = line1.split(" ")[0]
             read_res = {'sample_assign': "Unknown", 'rt_result': "Unknown", 'rt_value': "Unknown", 'p7_result': "Unknown", 'umi_value': "Unknown", 'pcr_result': "Unknown"}
             barcs = line1.strip().split(" ")[1].split(":")[3]
             if p5_none:
@@ -428,9 +430,9 @@ def make_undetermined_dict_2lvl(read_file, out_file):
             r2 = f.readline()
             r3 = f.readline()
             r4 = f.readline()
-            fo.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(read_res['rt_result'],\
+            fo.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(read_res['rt_result'],\
             read_res['rt_value'],read_res['sample_assign'],read_res['p5_result'],read_res['p7_result'],\
-            read_res['umi_value'],read_res['pcr_result']))
+            read_res['umi_value'],read_res['pcr_result'],read_name))
             sum_dict['total_reads'] += 1
 
             if ((read_res['rt_result'] != 'OK') + (read_res['pcr_result'] != 'OK')) > 1:
@@ -625,7 +627,6 @@ if __name__ == '__main__':
         p7_whitelist = ["none", "no_correct"]
         p7_lookup = {"none":"none"}
     else:
-
         p7_lookup = bu.load_whitelist(P7_FILE)
         p7_lookup = {sequence[0:args.p7_length]: well for sequence,well in p7_lookup.items()}
         p7_whitelist = bu.construct_mismatch_to_whitelist_map(p7_lookup, edit_distance = 1)
@@ -634,12 +635,11 @@ if __name__ == '__main__':
         p5_whitelist = ["none", "no_correct"]
         p5_lookup = {"none":"none"}
     else:
-        p5_whitelist = bu.construct_mismatch_to_whitelist_map(p5_lookup, edit_distance = 1)
         p5_lookup = bu.load_whitelist(P5_FILE)
         if reverse_complement_i5(args.run_directory):
             p5_lookup = {bu.reverse_complement(sequence): well for sequence,well in p5_lookup.items()}
         p5_lookup = {sequence[0:args.p5_length]: well for sequence,well in p5_lookup.items()}
-
+        p5_whitelist = bu.construct_mismatch_to_whitelist_map(p5_lookup, edit_distance = 1)
 
     if args.p5_cols_used != [0]:
         programmed_pcr_combos = get_programmed_pcr_combos(p5_lookup, p7_lookup, args.p5_cols_used, args.p7_rows_used)

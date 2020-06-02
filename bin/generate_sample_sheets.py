@@ -22,9 +22,11 @@ if __name__ == '__main__':
     with open(args.input_csv, 'r') as incsv:
         for line in incsv:
             line = line.strip().split(',')
+            tiss = line[3].split(":")
+            tiss = [x.capitalize() for x in tiss]
             samp = {'sample_id' : line[0], 'project_id' : line[1], 'species' : line[2].capitalize(), 
-                    'tissue' : line[3].capitalize(), 'rt_barc' : line[4]}
-            if samp['tissue'] != "":
+                    'tissue' : tiss, 'rt_barc' : line[4]}
+            if samp['tissue'] != [""]:
                 garnett = True
             sample_dict[line[0]] = samp
     
@@ -60,10 +62,12 @@ if __name__ == '__main__':
                     garnett_dict[tissue_key] = [line[2]]
 
         for key, value in sample_dict.items():
-            if (value['species'], value['tissue']) in garnett_dict:
-                for item in garnett_dict[(value['species'], value['tissue'])]:
-                    ent = value['sample_id'] + "," + item + "\n"
-                    garnettsheet.write(ent)
+            for tiss in value['tissue']:
+                print(tiss)
+                if (value['species'], tiss) in garnett_dict:
+                    for item in garnett_dict[(value['species'], tiss)]:
+                        ent = value['sample_id'] + "," + item + "\n"
+                        garnettsheet.write(ent)
     garnettsheet.close()
 
 

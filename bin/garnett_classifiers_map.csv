@@ -1,0 +1,38 @@
+Human,Lung,/net/bbi/vol1/data/garnett_classifiers/hs_lung_Lambrechts.RDS
+Human,PBMCs,/net/bbi/vol1/data/garnett_classifiers/hs_pbmcs_10x_genomics.RDS
+Human,Lung,/net/bbi/vol1/data/garnett_classifiers/hs_lung_Lambrechts_mf.RDS
+Human,Heart,/net/bbi/vol1/data/garnett_classifiers/hs_heart_Taylor_mf.RDS
+Mouse,Lung,/net/bbi/vol1/data/garnett_classifiers/mm_lung_TabulaMuris_mf.RDS
+Mouse,Lung,/net/bbi/vol1/data/garnett_classifiers/mm_lung_MCA.RDS
+Mouse,Brain,/net/bbi/vol1/data/garnett_classifiers/mm_brain_Zeisel.RDS
+Mouse,Kidney,/net/bbi/vol1/data/garnett_classifiers/mm_kidney_TabulaMuris_mf.RDS
+Mouse,Aorta,/net/bbi/vol1/data/garnett_classifiers/mm_aorta_TabulaMuris_mf.RDS
+Mouse,Brain,/net/bbi/vol1/data/garnett_classifiers/mm_brain_TabulaMuris_mf.RDS
+Mouse,Large intestine,/net/bbi/vol1/data/garnett_classifiers/mm_large_intestine_TabulaMuris_mf.RDS
+Mouse,Heart,/net/bbi/vol1/data/garnett_classifiers/mm_heart_TabulaMuris_mf.RDS
+Mouse,Liver,/net/bbi/vol1/data/garnett_classifiers/mm_liver_TabulaMuris_mf.RDS
+Mouse,Bone marrow,/net/bbi/vol1/data/garnett_classifiers/mm_bone_marrow_TabulaMuris_mf.RDS
+Mouse,Pancreas,/net/bbi/vol1/data/garnett_classifiers/mm_pancreas_TabulaMuris_mf.RDS
+Mouse,Skin,/net/bbi/vol1/data/garnett_classifiers/mm_skin_TabulaMuris_mf.RDS
+Mouse,Spleen,/net/bbi/vol1/data/garnett_classifiers/mm_spleen_TabulaMuris_mf.RDS
+Mouse,Thymus,/net/bbi/vol1/data/garnett_classifiers/mm_thymus_TabulaMuris_mf.RDS
+Mouse,Lung,/net/bbi/vol1/data/garnett_classifiers/mm_lung_MCA_mf.RDS
+Mouse,Bone marrow,/net/bbi/vol1/data/garnett_classifiers/mm_bone_marrow_MCA_mf.RDS
+Mouse,Bladder,/net/bbi/vol1/data/garnett_classifiers/mm_bladder_MCA_mf.RDS
+Mouse,Brain,/net/bbi/vol1/data/garnett_classifiers/mm_brain_MCA_mf.RDS
+Mouse,Kidney,/net/bbi/vol1/data/garnett_classifiers/mm_kidney_MCA_mf.RDS
+Mouse,Liver,/net/bbi/vol1/data/garnett_classifiers/mm_liver_MCA_mf.RDS
+Mouse,Mammary gland,/net/bbi/vol1/data/garnett_classifiers/mm_mammary_gland_MCA_mf.RDS
+Mouse,Muscle,/net/bbi/vol1/data/garnett_classifiers/mm_muscle_MCA_mf.RDS
+Mouse,Ovary,/net/bbi/vol1/data/garnett_classifiers/mm_ovary_MCA_mf.RDS
+Mouse,Blood,/net/bbi/vol1/data/garnett_classifiers/mm_blood_MCA_mf.RDS
+Mouse,Pancreas,/net/bbi/vol1/data/garnett_classifiers/mm_pancreas_MCA_mf.RDS
+Mouse,Placenta,/net/bbi/vol1/data/garnett_classifiers/mm_placenta_MCA_mf.RDS
+Mouse,Prostate,/net/bbi/vol1/data/garnett_classifiers/mm_prostate_MCA_mf.RDS
+Mouse,Small intestine,/net/bbi/vol1/data/garnett_classifiers/mm_small_intestine_MCA_mf.RDS
+Mouse,Spleen,/net/bbi/vol1/data/garnett_classifiers/mm_spleen_MCA_mf.RDS
+Mouse,Stomach,/net/bbi/vol1/data/garnett_classifiers/mm_stomach_MCA_mf.RDS
+Mouse,Testis,/net/bbi/vol1/data/garnett_classifiers/mm_testis_MCA_mf.RDS
+Mouse,Thymus,/net/bbi/vol1/data/garnett_classifiers/mm_thymus_MCA_mf.RDS
+Mouse,Uterus,/net/bbi/vol1/data/garnett_classifiers/mm_uterus_MCA_mf.RDS
+C. elegans,Whole,/net/bbi/vol1/data/garnett_classifiers/ce_whole_Cao.RDS

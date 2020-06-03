@@ -9,6 +9,7 @@ params.fastq_chunk_size = 100000000
 params.run_recovery = false
 params.rt_barcode_file="default"
 params.large = false
+params.generate_samplesheets = false
 params.max_cores = 16
 params.max_wells_per_sample = 20
 
@@ -56,10 +57,40 @@ if (params.help) {
     log.info '    params.large = false                       Is this a very large run? If true, the fastqs will be split - note that for smaller runs this will make the pipeline run more slowly.'
     log.info '    params.max_wells_per_sample = 20           The maximum number of wells per sample - if a sample is in more wells, the fastqs will be split then reassembled.'
     log.info '    --run_recovery true                        Add this to run the recovery script AFTER running the normal pipeline.'
+    log.info '    --generate_samplesheets input_csv          Add this to generate the necessary samplesheet from the universal input sheet.'    
     log.info ''
     log.info 'Issues? Contact hpliner@uw.edu'
     exit 1
 }
+
+
+process generate_sheets {
+    module 'modules:java/latest:modules-init:modules-gs:python/3.6.4'
+    memory '1 GB'
+
+    publishDir path: "${params.output_dir}", pattern: "SampleSheet.csv", mode: 'copy'
+    publishDif path: "${params.output_dir}", pattern: "SampleMap.csv", mode: 'copy'
+    publishDir path: "${params.output_dir}", pattern: "GarnettSheet.csv", mode: 'copy'
+    input:
+
+    output:
+        file "*Sheet.csv"
+        file "SampleMap.csv" optional true
+
+    when:
+        params.generate_samplesheets != false
+
+
+    """
+    generate_sample_sheets.py $params.generate_samplesheets
+    """
+
+
+
+}
+
+
+
 
 // check required options
 if (!params.run_dir || !params.output_dir || !params.sample_sheet ) {

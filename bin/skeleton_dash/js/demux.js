@@ -133,26 +133,7 @@ function RTBarcodes(props) {
       React.createElement(
         "div",
         { className: "nav nav-tabs", id: "navrt-tab", role: "tablist" },
-        React.createElement(
-          "a",
-          { className: "nav-item nav-link", id: "navrt-lane1-tab", "data-toggle": "tab", href: "#navrt-lane1", role: "tab", "aria-controls": "navrt-lane1", "aria-selected": "false" },
-          "Lane 1"
-        ),
-        React.createElement(
-          "a",
-          { className: "nav-item nav-link", id: "navrt-lane2-tab", "data-toggle": "tab", href: "#navrt-lane2", role: "tab", "aria-controls": "navrt-lane2", "aria-selected": "false" },
-          "Lane 2"
-        ),
-        React.createElement(
-          "a",
-          { className: "nav-item nav-link", id: "navrt-lane3-tab", "data-toggle": "tab", href: "#navrt-lane3", role: "tab", "aria-controls": "navrt-lane3", "aria-selected": "false" },
-          "Lane 3"
-        ),
-        React.createElement(
-          "a",
-          { className: "nav-item nav-link", id: "navrt-lane4-tab", "data-toggle": "tab", href: "#navrt-lane4", role: "tab", "aria-controls": "navrt-lane4", "aria-selected": "false" },
-          "Lane 4"
-        )
+        props.rt_tab_head
       )
     ),
     React.createElement(
@@ -169,7 +150,8 @@ function PCRTab(props) {
   });
   return React.createElement(
     "div",
-    { className: props.className, id: "navpcr-lane" + props.lane, role: "tabpanel", "aria-labelledby": "navpcr-lane" + props.lane + "-tab" },
+    { className: props.className, id: "navpcr-lane" + props.lane, role: "tabpanel",
+      "aria-labelledby": "navpcr-lane" + props.lane + "-tab" },
     React.createElement(
       "p",
       null,
@@ -199,7 +181,8 @@ function PCRTabPlate(props) {
       "PCR Combo ",
       props.plate_name
     ),
-    React.createElement("img", { src: "img/L00" + props.lane + "_" + props.plate_name + ".pcr_plate.png", width: "50%", className: "rounded mx-auto d-block", alt: "..." })
+    React.createElement("img", { src: "img/L00" + props.lane + "_" + props.plate_name + ".pcr_plate.png", width: "50%",
+      className: "rounded mx-auto d-block", alt: "..." })
   );
 }
 
@@ -284,26 +267,7 @@ function PCRBarcodes(props) {
         React.createElement(
           "div",
           { className: "nav nav-tabs", id: "navpcr-tab", role: "tablist" },
-          React.createElement(
-            "a",
-            { className: "nav-item nav-link", id: "navpcr-lane1-tab", "data-toggle": "tab", href: "#navpcr-lane1", role: "tab", "aria-controls": "navpcr-lane1", "aria-selected": "false" },
-            "Lane 1"
-          ),
-          React.createElement(
-            "a",
-            { className: "nav-item nav-link", id: "navpcr-lane2-tab", "data-toggle": "tab", href: "#navpcr-lane2", role: "tab", "aria-controls": "navpcr-lane2", "aria-selected": "false" },
-            "Lane 2"
-          ),
-          React.createElement(
-            "a",
-            { className: "nav-item nav-link", id: "navpcr-lane3-tab", "data-toggle": "tab", href: "#navpcr-lane3", role: "tab", "aria-controls": "navpcr-lane3", "aria-selected": "false" },
-            "Lane 3"
-          ),
-          React.createElement(
-            "a",
-            { className: "nav-item nav-link", id: "navpcr-lane4-tab", "data-toggle": "tab", href: "#navpcr-lane4", role: "tab", "aria-controls": "navpcr-lane4", "aria-selected": "false" },
-            "Lane 4"
-          )
+          props.pcr_tab_head
         )
       ),
       React.createElement(
@@ -323,6 +287,26 @@ function LigTab(props) {
     "div",
     { className: props.className, id: "navlig-lane" + props.lane, role: "tabpanel", "aria-labelledby": "navlig-lane" + props.lane + "-tab" },
     plates
+  );
+}
+
+function CodeChunk(props) {
+  return React.createElement(
+    "pre",
+    { style: { paddingLeft: '20px' } },
+    React.createElement(
+      "code",
+      null,
+      '\n' + props.text + '\n\n'
+    )
+  );
+}
+
+function LogTab(props) {
+  return React.createElement(
+    "div",
+    { className: props.className, id: "navlog-lane" + props.lane, role: "tabpanel", "aria-labelledby": "navlog-lane" + props.lane + "-tab" },
+    React.createElement(CodeChunk, { text: props.log })
   );
 }
 
@@ -359,32 +343,43 @@ function LigBarcodes(props) {
       React.createElement(
         "div",
         { className: "nav nav-tabs", id: "navlig-tab", role: "tablist" },
-        React.createElement(
-          "a",
-          { className: "nav-item nav-link", id: "navlig-lane1-tab", "data-toggle": "tab", href: "#navlig-lane1", role: "tab", "aria-controls": "navlig-lane1", "aria-selected": "false" },
-          "Lane 1"
-        ),
-        React.createElement(
-          "a",
-          { className: "nav-item nav-link", id: "navlig-lane2-tab", "data-toggle": "tab", href: "#navlig-lane2", role: "tab", "aria-controls": "navlig-lane2", "aria-selected": "false" },
-          "Lane 2"
-        ),
-        React.createElement(
-          "a",
-          { className: "nav-item nav-link", id: "navlig-lane3-tab", "data-toggle": "tab", href: "#navlig-lane3", role: "tab", "aria-controls": "navlig-lane3", "aria-selected": "false" },
-          "Lane 3"
-        ),
-        React.createElement(
-          "a",
-          { className: "nav-item nav-link", id: "navlig-lane4-tab", "data-toggle": "tab", href: "#navlig-lane4", role: "tab", "aria-controls": "navlig-lane4", "aria-selected": "false" },
-          "Lane 4"
-        )
+        props.lig_tab_head
       )
     ),
     React.createElement(
       "div",
       { className: "tab-content", id: "nav-ligContent" },
       props.lig_tabs
+    )
+  );
+}
+
+function RecoveryLog(props) {
+  return React.createElement(
+    "div",
+    { className: "tab-pane fade", id: "log", role: "tabpanel", "aria-labelledby": "log-tab" },
+    React.createElement(
+      "div",
+      { className: "d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom" },
+      React.createElement(
+        "h1",
+        { className: "h3", id: "log-name" },
+        "Recovery Summary"
+      )
+    ),
+    React.createElement(
+      "nav",
+      null,
+      React.createElement(
+        "div",
+        { className: "nav nav-tabs", id: "navlig-tab", role: "tablist" },
+        props.log_tab_head
+      )
+    ),
+    React.createElement(
+      "div",
+      { className: "tab-content", id: "nav-ligContent" },
+      props.log_tabs
     )
   );
 }
@@ -564,7 +559,12 @@ function DemuxPage(props) {
                 "a",
                 { className: "nav-link", id: "lig-tab", "data-toggle": "pill", href: "#lig", role: "tab", "aria-controls": "lig", "aria-selected": "false" },
                 "Ligation Barcodes"
-              ) : ''
+              ) : '',
+              React.createElement(
+                "a",
+                { className: "nav-link", id: "log-tab", "data-toggle": "pill", href: "#log", role: "tab", "aria-controls": "log", "aria-selected": "false" },
+                "Recovery Summary"
+              )
             )
           )
         ),
@@ -575,9 +575,12 @@ function DemuxPage(props) {
             "div",
             { className: "tab-content", id: "nav-tabContent" },
             React.createElement(SummaryTable, { lane_stats: props.lane_stats }),
-            React.createElement(RTBarcodes, { rt_tabs: props.rt_tabs, bad_wells: props.bad_wells }),
-            React.createElement(PCRBarcodes, { pcr_tabs: props.pcr_tabs, lane_stats: props.lane_stats, pcr_combo_list: props.pcr_combo_list, pcr_well_info: props.pcr_well_info }),
-            props.level == 3 ? React.createElement(LigBarcodes, { lig_tabs: props.lig_tabs }) : ""
+            React.createElement(RTBarcodes, { rt_tabs: props.rt_tabs, bad_wells: props.bad_wells, rt_tab_head: props.rt_tab_head }),
+            React.createElement(PCRBarcodes, { pcr_tabs: props.pcr_tabs, lane_stats: props.lane_stats,
+              pcr_combo_list: props.pcr_combo_list, pcr_well_info: props.pcr_well_info,
+              pcr_tab_head: props.pcr_tab_head }),
+            props.level == 3 ? React.createElement(LigBarcodes, { lig_tabs: props.lig_tabs, lig_tab_head: props.lig_tab_head }) : "",
+            React.createElement(RecoveryLog, { log_tabs: props.log_tabs, log_tab_head: props.log_tab_head })
           )
         )
       )
@@ -603,6 +606,10 @@ var LigTabs = lane_list.map(function (lane, index) {
   return React.createElement(LigTab, { key: index, className: "tab-pane fade", lane: lane });
 });
 
+var LogTabs = lane_list.map(function (lane, index) {
+  return React.createElement(LogTab, { key: index, className: "tab-pane fade", lane: lane, log: log_data[lane] });
+});
+
 var RTTabs = lane_list.map(function (lane, index) {
   return React.createElement(RTTab, { key: index, className: "tab-pane fade", lane: lane, bad_wells: bad_wells, bad_wells_barcodes: bad_wells_barcodes, norm: include_norm });
 });
@@ -611,4 +618,39 @@ var PCRLaneTabs = lane_list.map(function (lane, index) {
   return Object.keys(pcr_combo_list).length === 0 ? "" : React.createElement(PCRTab, { key: index, className: "tab-pane fade", lane: lane });
 });
 
-ReactDOM.render(React.createElement(DemuxPage, { rt_tabs: RTTabs, pcr_tabs: PCRLaneTabs, pcr_well_info: pcr_well_info, pcr_combo_list: pcr_combo_list, lig_tabs: LigTabs, lane_stats: lane_stats, level: level, run_name: run_name, bad_wells: bad_wells }), document.getElementById('demux_page'));
+var LigTabHead = lane_list.map(function (lane, index) {
+  return React.createElement(
+    "a",
+    { key: index, className: "nav-item nav-link", id: "navlig-lane" + lane + "-tab", "data-toggle": "tab", href: "#navlig-lane" + lane, role: "tab", "aria-controls": "navlig-lane" + lane, "aria-selected": "false" },
+    "Lane " + lane
+  );
+});
+
+var RTTabHead = lane_list.map(function (lane, index) {
+  return React.createElement(
+    "a",
+    { key: index, className: "nav-item nav-link", id: "navrt-lane" + lane + "-tab", "data-toggle": "tab", href: "#navrt-lane" + lane, role: "tab", "aria-controls": "navrt-lane" + lane, "aria-selected": "false" },
+    "Lane " + lane
+  );
+});
+
+var PCRTabHead = lane_list.map(function (lane, index) {
+  return React.createElement(
+    "a",
+    { key: index, className: "nav-item nav-link", id: "navpcr-lane" + lane + "-tab", "data-toggle": "tab", href: "#navpcr-lane" + lane, role: "tab", "aria-controls": "navpcr-lane" + lane, "aria-selected": "false" },
+    "Lane " + lane
+  );
+});
+
+var LogTabHead = lane_list.map(function (lane, index) {
+  return React.createElement(
+    "a",
+    { key: index, className: "nav-item nav-link", id: "navlog-lane" + lane + "-tab", "data-toggle": "tab", href: "#navlog-lane" + lane, role: "tab", "aria-controls": "navlog-lane" + lane, "aria-selected": "false" },
+    "Lane " + lane
+  );
+});
+
+ReactDOM.render(React.createElement(DemuxPage, { rt_tabs: RTTabs, pcr_tabs: PCRLaneTabs, pcr_well_info: pcr_well_info,
+  pcr_combo_list: pcr_combo_list, lig_tabs: LigTabs, lane_stats: lane_stats,
+  level: level, run_name: run_name, bad_wells: bad_wells, rt_tab_head: RTTabHead,
+  lig_tab_head: LigTabHead, pcr_tab_head: PCRTabHead, log_tabs: LogTabs, log_tab_head: LogTabHead }), document.getElementById('demux_page'));

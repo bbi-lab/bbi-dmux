@@ -10,6 +10,8 @@ params.run_recovery = false
 params.rt_barcode_file="default"
 params.large = false
 params.generate_samplesheets = false
+params.max_cores = 16
+params.max_wells_per_sample = 20
 
 params.p5_cols = 0
 params.p7_rows = 0
@@ -49,11 +51,11 @@ if (params.help) {
     log.info '    params.max_cores = 16                      The maximum number of cores to use - fewer will be used if appropriate.'
     log.info '    process.maxForks = 20                      The maximum number of processes to run at the same time on the cluster.'
     log.info '    process.queue = "trapnell-short.q"         The queue on the cluster where the jobs should be submitted. '
-    log.info '    params.rerun = [sample1, sample2]          Add to only rerun certain samples from trimming on.'
     log.info '    params.star_file = PATH/TO/FILE            File with the genome to star maps, similar to the one included with the package.'
     log.info '    params.fastq_chunk_size = 100000000        The number of reads that should be processed together for demultiplexing.'
     log.info '    params.bcl_max_mem = 40                    The maximum number of GB of RAM to assign for bcl2fastq'
     log.info '    params.large = false                       Is this a very large run? If true, the fastqs will be split - note that for smaller runs this will make the pipeline run more slowly.'
+    log.info '    params.max_wells_per_sample = 20           The maximum number of wells per sample - if a sample is in more wells, the fastqs will be split then reassembled.'
     log.info '    --run_recovery true                        Add this to run the recovery script AFTER running the normal pipeline.'
     log.info '    --generate_samplesheets input_csv          Add this to generate the necessary samplesheet from the universal input sheet.'    
     log.info ''
@@ -95,9 +97,9 @@ if (!params.run_dir || !params.output_dir || !params.sample_sheet ) {
     exit 1, "Must include config file using -c CONFIG_FILE.config that includes output_dir, sample_sheet and run_dir."
 }
 
-if (!(params.p7_rows && params.p5_cols) && !(params.p7_wells && params.p5_wells)) {
-    exit 1, "Must include config file using -c CONFIG_FILE.config that includes p7_rows and p5_cols or p5_wells and p7_wells"
-}
+//if (!(params.p7_rows && params.p5_cols) && !(params.p7_wells && params.p5_wells)) {
+//    exit 1, "Must include config file using -c CONFIG_FILE.config that includes p7_rows and p5_cols or p5_wells and p7_wells"
+//}
 
 star_file = file(params.star_file)
 
@@ -113,7 +115,7 @@ process check_sample_sheet {
         file "*.csv" into good_sample_sheet
 
     """
-    check_sample_sheet.py --sample_sheet $params.sample_sheet --star_file $star_file --level $params.level --rt_barcode_file $params.rt_barcode_file
+    check_sample_sheet.py --sample_sheet $params.sample_sheet --star_file $star_file --level $params.level --rt_barcode_file $params.rt_barcode_file --max_wells_per_samp $params.max_wells_per_sample    
     """
 }
 
@@ -197,9 +199,13 @@ fastqs.into { fastqs_path1; fastqs_path2 }
 
 process seg_sample_fastqs1 {
     cache 'lenient'
-    module 'java/latest:modules:modules-init:modules-gs:python/3.6.4:pigz/2.3'
+    module 'java/latest:modules:modules-init:modules-gs:python/3.6.4:zlib/1.2.6:pigz/2.3'
+    penv 'serial'
     memory '1 GB'
-    cpus '8'   
+    cpus 8 
+    publishDir path: "${params.output_dir}/", pattern: "demux_out/*fastq.gz", mode: 'link'     
+    publishDir  path: "${params.output_dir}/demux_out/", pattern: "*.csv", mode: 'copy'
+    publishDir  path: "${params.output_dir}/demux_out/", pattern: "*.json", mode: 'copy'
 
     input:
         set file(R1), file(R2) from fastqs_path1
@@ -207,9 +213,9 @@ process seg_sample_fastqs1 {
 
     output:
         file "demux_out/*" into seg_output1
-        file "demux_out/*.fastq.gz" into samp_fastqs_check1 mode flatten
+        file "demux_out/*.fastq.gz" into samp_fastqs_check1
         file "demux_out/*.stats.json" into json_stats1 mode flatten
-        file "demux_out/*.csv" into csv_stats1 mode flatten
+        file "demux_out/*.csv" into csv_stats1
     
     when:
         !params.large
@@ -238,11 +244,11 @@ process demux_dash1 {
     publishDir path: "${params.output_dir}/", pattern: "demux_dash", mode: 'copy'
 
     input:
-        file demux_stats_csvs from csv_stats1
-        file jsons from json_stats1
+        file demux_stats_csvs from csv_stats1.collect()
+        file jsons from json_stats1.collect()
         file sample_sheet_file2
     output:
-        file demux_dash1
+        file "demux_dash" into demux_dash1
 
     """
     mkdir demux_dash
@@ -264,9 +270,10 @@ process demux_dash1 {
 
 process seg_sample_fastqs2 {
     cache 'lenient'
-    module 'java/latest:modules:modules-init:modules-gs:python/3.6.4:pigz/2.3'
+    module 'java/latest:modules:modules-init:modules-gs:python/3.6.4:zlib/1.2.6:pigz/2.3'
     memory '1 GB'    
-
+    penv 'serial'
+    cpus 8
     input:
         set file(R1), file(R2) from fastqs_path2.splitFastq(by: params.fastq_chunk_size, file: true, pe: true)
         file sample_sheet_file3
@@ -289,7 +296,7 @@ process seg_sample_fastqs2 {
         --p5_wells_used $params.p5_wells --p7_wells_used $params.p7_wells \
         --rt_barcode_file $params.rt_barcode_file \
         --output_dir ./demux_out --level $params.level
-    gzip demux_out/*.fastq
+    pigz -p 8 demux_out/*.fastq    
     """    
 }
 
@@ -490,16 +497,15 @@ save_recovery = {params.output_dir + "/recovery_output/" +  it - ~/.fastq.gz.txt
 process run_recovery {
     module 'modules:java/latest:modules-init:modules-gs:python/3.6.4'
     memory '4 GB'
-
-    publishDir path: "${params.output_dir}/recovery_output", saveAs: save_recovery, pattern: "*.gz.txt", mode: 'move'
-    publishDir path: "${params.output_dir}/recovery_output", saveAs: save_recovery2, pattern: "*-summary.txt", mode: 'move'
+    publishDir path: "${params.output_dir}/recovery_output", saveAs: save_recovery, pattern: "*.gz.txt", mode: 'link'
+    publishDir path: "${params.output_dir}/recovery_output", saveAs: save_recovery2, pattern: "*-summary.txt", mode: 'link'
     input:
         file input from Channel.fromPath("${params.demux_out}/Undetermined*")
         file sample_sheet_file5
 
     output:
         file "*.txt"
-
+        file "*summary.txt" into summaries
     when:
         params.run_recovery
 
@@ -509,13 +515,48 @@ process run_recovery {
         --run_directory $params.run_dir \
         --sample_layout $sample_sheet_file5 \
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
+        --p5_wells_used $params.p5_wells --p7_wells_used $params.p7_wells \
         --level $params.level \
         --rt_barcodes $params.rt_barcode_file
+
+    """
+
+}
+
+process sum_recovery {
+    module 'modules:java/latest:modules-init:modules-gs:python/3.6.4'
+    memory '4 GB'
+    publishDir path: "${params.output_dir}/demux_dash/js/", pattern: "recovery_summary.js", mode: 'move'
+
+    input:
+        file summary from summaries.collect()
+
+
+    output: 
+        file "*summary.js"
+
+    """
+   echo "const log_data = {" > recovery_summary.js
+   for file in $summary
+   do
+     filename=\$(basename \$file); 
+     part=\${filename/Undetermined-L00/};
+     lane=\${part/.fastq.gz-summary.txt/};   
+     printf "\$lane : \\`" >> recovery_summary.js;
+     cat \$file >> recovery_summary.js;
+     printf "\\`," >> recovery_summary.js;
+   done
+   echo "}" >> recovery_summary.js   
+
+
     """
 
 
-
 }
+
+
+
+
 
 
 

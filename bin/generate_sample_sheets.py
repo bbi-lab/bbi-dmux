@@ -8,6 +8,7 @@ import sys
 import os
 import codecs
 
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Script for generating the required sample sheets for the BBI sci-RNA pipelines from a single input csv.')
@@ -17,6 +18,8 @@ if __name__ == '__main__':
     parser.add_argument('--garnett_map', default="garnett_classifiers_map.csv", required=False, help='Map of Garnett models to apply given a species and tissue. csv with three columns and no header - species, tissue, path to classifier. Default is provided map.')
     args = parser.parse_args()
 
+    if args.garnett_map == "garnett_classifiers_map.csv":
+        args.garnett_map = os.path.join(SCRIPT_DIR, args.garnett_map)
     # Load data
     sample_dict = dict()
     garnett = False

@@ -110,6 +110,7 @@ def load_sample_layout(file_path):
     return lookup
 
 NEXTSEQ = 'NextSeq'
+NEXTSEQ2000 = 'NextSeq 1000/2000'
 MISEQ = 'MiSeq'
 NOVASEQ = 'NovaSeq'
 HISEQ4000 = 'HiSeq4000'
@@ -122,7 +123,8 @@ SEQUENCERS_P5_RC_MAP = {
     MISEQ: False,
     NOVASEQ: False,
     HISEQ4000: True,
-    HISEQ3000: False
+    HISEQ3000: False,
+    NEXTSEQ2000: True
 }
 
 # Taken from barcodeutils, but excluding what's not needed and not always found
@@ -149,7 +151,6 @@ def reverse_complement_i5(name):
 
     return SEQUENCERS_P5_RC_MAP[sequencer_type]
 
-# Taken from barcodeutils, but excluding what's not needed and not always found
 def get_run_info(flow_cell_path):
     """
     Helper function to get some info about the sequencing runs.
@@ -181,7 +182,9 @@ def get_run_info(flow_cell_path):
 
     application = application.text
     application_version = setup_node.find('ApplicationVersion')
-    if NEXTSEQ in application:
+    if NEXTSEQ2000 in application:
+        run_stats['instrument_type'] = NEXTSEQ2000
+    elif NEXTSEQ in application:
         run_stats['instrument_type'] = NEXTSEQ
     elif MISEQ in application:
         run_stats['instrument_type'] = MISEQ
@@ -198,14 +201,14 @@ def get_run_info(flow_cell_path):
     else:
         run_stats['instrument_type'] = UNKNOWN_SEQUENCER
 
-    run_start_date_node = tree.getroot().find('RunStartDate')
-
     # Now actually populate various stats
-    run_stats['date'] = run_start_date_node.text
 
     if run_stats['instrument_type'] == NOVASEQ:
         run_stats['p7_index_length'] = int(setup_node.find('PlannedIndex1ReadCycles').text)
         run_stats['p5_index_length'] = int(setup_node.find('PlannedIndex2ReadCycles').text)
+    elif run_stats['instrument_type'] == NEXTSEQ2000:
+        run_stats['p7_index_length'] = int(setup_node.find('PlannedCycles').find('Index1').text)
+        run_stats['p5_index_length'] = int(setup_node.find('PlannedCycles').find('Index1').text)
     else:
         run_stats['p7_index_length'] = int(setup_node.find('Index1Read').text)
         run_stats['p5_index_length'] = int(setup_node.find('Index2Read').text)

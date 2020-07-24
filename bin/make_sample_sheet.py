@@ -58,7 +58,8 @@ SEQUENCERS_P5_RC_MAP = {
     MISEQ: False,
     NOVASEQ: False,
     HISEQ4000: True,
-    HISEQ3000: False
+    HISEQ3000: False,
+    NEXTSEQ2000: True
 }
 
 # Taken from barcodeutils, but excluding what's not needed and not always found

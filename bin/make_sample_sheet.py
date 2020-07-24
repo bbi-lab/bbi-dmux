@@ -45,6 +45,7 @@ def load_barcode_file(barcode_file, index_length=None):
 
 
 NEXTSEQ = 'NextSeq'
+NEXTSEQ2000 = 'NextSeq 1000/2000'
 MISEQ = 'MiSeq'
 NOVASEQ = 'NovaSeq'
 HISEQ4000 = 'HiSeq4000'
@@ -116,7 +117,9 @@ def get_run_info(flow_cell_path):
 
     application = application.text
     application_version = setup_node.find('ApplicationVersion')
-    if NEXTSEQ in application:
+    if NEXTSEQ2000 in application:
+        run_stats['instrument_type'] = NEXTSEQ2000
+    elif NEXTSEQ in application:
         run_stats['instrument_type'] = NEXTSEQ
     elif MISEQ in application:
         run_stats['instrument_type'] = MISEQ
@@ -138,6 +141,9 @@ def get_run_info(flow_cell_path):
     if run_stats['instrument_type'] == NOVASEQ:
         run_stats['p7_index_length'] = int(setup_node.find('PlannedIndex1ReadCycles').text)
         run_stats['p5_index_length'] = int(setup_node.find('PlannedIndex2ReadCycles').text)
+    elif run_stats['instrument_type'] == NEXTSEQ2000:
+        run_stats['p7_index_length'] = int(setup_node.find('PlannedCycles').find('Index1').text)
+        run_stats['p5_index_length'] = int(setup_node.find('PlannedCycles').find('Index1').text)
     else:
         run_stats['p7_index_length'] = int(setup_node.find('Index1Read').text)
         run_stats['p5_index_length'] = int(setup_node.find('Index2Read').text)
@@ -153,6 +159,7 @@ if __name__ == '__main__':
     parser.add_argument('--run_directory', required=True, help='Path to BCL directory for sequencing run.')
     args = parser.parse_args()
 
+    #run_stats['date'] = run_start_date_node.text
     # Get simple things like index lengths and flow cell ID for the run
     run_info = get_run_info(args.run_directory)
 

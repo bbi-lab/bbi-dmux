@@ -133,10 +133,7 @@ def get_run_info(flow_cell_path):
     else:
         run_stats['instrument_type'] = UNKNOWN_SEQUENCER
 
-    run_start_date_node = tree.getroot().find('RunStartDate')
-
     # Now actually populate various stats
-    run_stats['date'] = run_start_date_node.text
 
     if run_stats['instrument_type'] == NOVASEQ:
         run_stats['p7_index_length'] = int(setup_node.find('PlannedIndex1ReadCycles').text)

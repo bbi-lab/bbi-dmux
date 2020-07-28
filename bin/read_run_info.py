@@ -1,5 +1,11 @@
 #!/usr/bin/python3
 
+#
+# This script is used in
+#    o  bbi-dmux/data/illumina_run_parameters/
+#    o  bbi-sciatac-demux/main.nf
+#
+
 import sys
 import json
 import run_info

@@ -28,6 +28,7 @@ if __name__ == '__main__':
         rtfile = args.rt_barcode_file
         fix = 0
     rtdict = {}
+
     with open(rtfile) as rt_file:
         for line in enumerate(rt_file):
             line = line[1].strip().split("\t")
@@ -53,7 +54,7 @@ if __name__ == '__main__':
 
     def fix_line(line, fix):
         line = line.split(",")
-        line[1] = well_dict[line[0]]
+#        line[1] = well_dict[line[0]]
         if fix == 0:
             return ",".join(line)
         if fix == 2:
@@ -101,7 +102,6 @@ if __name__ == '__main__':
     topline = topline_orig.strip().split(",")
     line_num = 1
     num_cols = len(topline)
-    
     if num_cols == 3:
         if topline[1] =='Sample ID' and topline[2] == 'Reference Genome':
             sample_out = 'RT Barcode,Sample ID,Reference Genome\n'

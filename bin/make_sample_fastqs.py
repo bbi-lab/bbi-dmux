@@ -260,7 +260,6 @@ if __name__ == '__main__':
 
     if args.multi_exp != 0:
         multi_exp = True
-        params.multi_exp = "{'Experiment 1':('D E', '4 5'), 'Experiment 2':('F', '3')}"
         all_p7 = ""
         all_p5 = ""
         exp_lookup = {}
@@ -268,12 +267,13 @@ if __name__ == '__main__':
             all_p7 += value[0]
             all_p5 += value[1]
             if len(value[0].split(" ")[0]) == 1:
-                combos = get_programmed_pcr_combos(p5_lookup, p7_lookup, args.p5_cols_used, args.p7_rows_used)
+                p5s = [int(x) for x in value[1].split(" ")]
+                combos = get_programmed_pcr_combos(p5_lookup, p7_lookup, p5s, value[0].split(" "))
             else:
-                combos = get_programmed_pcr_combos_wells(args.p5_wells_used, args.p7_wells_used)
+                combos = get_programmed_pcr_combos_wells(value[1].split(" "), value[0].split(" "))
             temp_dict = dict(zip(combos, [key]*len(combos)))
-            exp_lookup += temp_dict
-
+            exp_lookup.update(temp_dict)
+        
         all_p7 = all_p7.split(" ")
         all_p5 = all_p5.split(" ")
 
@@ -493,7 +493,7 @@ if __name__ == '__main__':
 
             if multi_exp:
                 experiment = exp_lookup[(p5, p7)]
-                if (rt_barcode, experiment) not in sample_rt_pcr_lookup[(rt_barcode, experiment)]:
+                if (rt_barcode, experiment) not in sample_rt_exp_lookup:
                     total_unused_rt_well += 1
                     write_to_undetermined(entry)
                     continue

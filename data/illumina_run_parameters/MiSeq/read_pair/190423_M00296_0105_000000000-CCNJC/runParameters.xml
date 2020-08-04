@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<RunParameters xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <EnableCloud>false</EnableCloud>
+  <RunParametersVersion>MiSeq_1_1</RunParametersVersion>
+  <CopyManifests>true</CopyManifests>
+  <FlowcellRFIDTag>
+    <SerialNumber>000000000-CCNJC</SerialNumber>
+    <PartNumber>15028382</PartNumber>
+    <ExpirationDate>2020-01-07T00:00:00</ExpirationDate>
+  </FlowcellRFIDTag>
+  <PR2BottleRFIDTag>
+    <SerialNumber>MS7860404-00PR2</SerialNumber>
+    <PartNumber>15041807</PartNumber>
+    <ExpirationDate>2020-01-02T00:00:00</ExpirationDate>
+  </PR2BottleRFIDTag>
+  <ReagentKitRFIDTag>
+    <SerialNumber>MS8138999-300V2</SerialNumber>
+    <PartNumber>15033572</PartNumber>
+    <ExpirationDate>2020-01-06T00:00:00</ExpirationDate>
+  </ReagentKitRFIDTag>
+  <Resumable>true</Resumable>
+  <ManifestFiles />
+  <AfterRunWashMethod>Post-Run Wash</AfterRunWashMethod>
+  <Setup>
+    <SupportMultipleSurfacesInUI>true</SupportMultipleSurfacesInUI>
+    <ApplicationVersion>2.6.2.1</ApplicationVersion>
+    <NumTilesPerSwath>14</NumTilesPerSwath>
+    <NumSwaths>1</NumSwaths>
+    <NumLanes>1</NumLanes>
+    <ApplicationName>MiSeq Control Software</ApplicationName>
+  </Setup>
+  <RunID>190423_M00296_0105_000000000-CCNJC</RunID>
+  <ScannerID>M00296</ScannerID>
+  <RunNumber>105</RunNumber>
+  <FPGAVersion>9.5.12</FPGAVersion>
+  <MCSVersion>2.6.2.1</MCSVersion>
+  <RTAVersion>1.18.54</RTAVersion>
+  <Barcode>000000000-CCNJC</Barcode>
+  <PR2BottleBarcode>MS7860404-00PR2</PR2BottleBarcode>
+  <ReagentKitPartNumberEntered>15033572</ReagentKitPartNumberEntered>
+  <ReagentKitVersion>Version2</ReagentKitVersion>
+  <ReagentKitBarcode>MS8138999-300V2</ReagentKitBarcode>
+  <PreviousPR2BottleBarcode />
+  <PreviousReagentKitBarcode>MS8138999-300V2</PreviousReagentKitBarcode>
+  <ExperimentName>sciATAC_barnyard7</ExperimentName>
+  <Chemistry>SCATAC_384</Chemistry>
+  <Username>sbsuser</Username>
+  <Workflow>
+    <Analysis>Resequencing</Analysis>
+  </Workflow>
+  <EnableAnalysis>false</EnableAnalysis>
+  <Reads>
+    <RunInfoRead Number="1" NumCycles="51" IsIndexedRead="N" />
+    <RunInfoRead Number="2" NumCycles="18" IsIndexedRead="Y" />
+    <RunInfoRead Number="3" NumCycles="18" IsIndexedRead="Y" />
+    <RunInfoRead Number="4" NumCycles="51" IsIndexedRead="N" />
+  </Reads>
+  <TempFolder>D:\Illumina\MiSeqTemp\190423_M00296_0105_000000000-CCNJC</TempFolder>
+  <AnalysisFolder>D:\Illumina\MiSeqAnalysis\190423_M00296_0105_000000000-CCNJC</AnalysisFolder>
+  <RunStartDate>190423</RunStartDate>
+  <MostRecentWashType>PostRun</MostRecentWashType>
+  <RecipeFolder>D:\Illumina\MiSeq Control Software\CustomRecipe</RecipeFolder>
+  <ILMNOnlyRecipeFolder>C:\Illumina\MiSeq Control Software\Recipe</ILMNOnlyRecipeFolder>
+  <SampleSheetName>20190423_sciATAC</SampleSheetName>
+  <SampleSheetFolder>C:\Users\sbsuser\Desktop</SampleSheetFolder>
+  <ManifestFolder>D:\Illumina\MiSeq Control Software\Manifests</ManifestFolder>
+  <OutputFolder>D:\Illumina\MiSeqOutput\190423_M00296_0105_000000000-CCNJC</OutputFolder>
+  <FocusMethod>AutoFocus</FocusMethod>
+  <SurfaceToScan>Both</SurfaceToScan>
+  <SaveFocusImages>false</SaveFocusImages>
+  <SaveScanImages>true</SaveScanImages>
+  <CloudUsername />
+  <RunManagementType>Standalone</RunManagementType>
+  <CloudRunId />
+  <SendInstrumentHealthToILMN>false</SendInstrumentHealthToILMN>
+</RunParameters>

@@ -1,3 +1,19 @@
+/*
+** Check that Nextflow version meets minimum version requirements.
+*/
+def minMajorVersion = 20
+def minMinorVersion = 0
+checkNextflowVersion( minMajorVersion, minMinorVersion )
+
+
+/*
+** Check OS version.
+** Notes:
+**   o  works only for Linux systems
+**   o  used to distinguish between CentOS 6 and CentOS 7
+*/
+( osName, osDistribution, osRelease ) = getOSInfo()
+
 
 // Parse input parameters
 params.help = false
@@ -564,5 +580,69 @@ workflow.onComplete {
 }
 
 
+/*************
+Groovy functions
+*************/
+
+/*
+** checkNextflowVersion
+**
+** Purpose: check Nextflow version information to minimum version values.
+**
+** Returns:
+**   exits when Nextflow version is unacceptable
+*/
+def checkNextflowVersion( Integer minMajorVersion, Integer minMinorVersion )
+{
+  def sVersion = nextflow.version.toString()
+  def aVersion = sVersion.split( /[.]/ )
+  def majorVersion = aVersion[0].toInteger()
+  def minorVersion = aVersion[1].toInteger()
+  if( majorVersion < minMajorVersion || minorVersion < minMinorVersion )
+  {
+    def serr = "This pipeline requires Nextflow version at least %s.%s: you have version %s."
+    println()
+    println( '****  ' + String.format( serr, minMajorVersion, minMinorVersion, sVersion ) + '  ****' )
+    println()
+    System.exit( -1 )
+    /*
+    ** An exception produces an exceptionally verbose block of confusing text. I leave
+    ** the command here in case the println() output is obscured by fancy Nextflow tables.
+    **
+    ** throw new Exception( String.format( serr, minMajorVersion, minMinorVersion, sVersion ) )
+    */
+  }
+  return( 0 )
+}
+
+
+/*
+** getOSInfo()
+**
+** Purpose: get information about the operating system.
+**
+** Returns:
+**    list of strings with OS name, OS distribution, OS distribution release
+**
+** Notes:
+**   o  limited to Linux operating systems at this time
+*/
+def getOSInfo()
+{
+  def osName = System.properties['os.name']
+  def osDistribution
+  def osRelease
+  if( osName == 'Linux' )
+  {
+    def proc
+    proc = "lsb_release -a".execute() | ['awk', 'BEGIN{FS=":"}{if($1=="Distributor ID"){print($2)}}'].execute()
+    proc.waitFor()
+    osDistribution = proc.text.trim()
+    proc = "lsb_release -a".execute() | ['awk', 'BEGIN{FS=":"}{if($1=="Release"){print($2)}}'].execute()
+    proc.waitFor()
+    osRelease = proc.text.trim()
+  }
+  return( [ osName, osDistribution, osRelease ] )
+}
 
 

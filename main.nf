@@ -80,9 +80,6 @@ if (params.help) {
 }
 
 process generate_sheets {
-    module 'modules:java/latest:modules-init:modules-gs:python/3.6.4'
-    memory '1 GB'
-
     publishDir path: "${params.output_dir}", pattern: "SampleSheet.csv", mode: 'copy'
     publishDir path: "${params.output_dir}", pattern: "SampleMap.csv", mode: 'copy'
     publishDir path: "${params.output_dir}", pattern: "GarnettSheet.csv", mode: 'copy'
@@ -119,8 +116,6 @@ star_file = file(params.star_file)
 
 // check sample sheet
 process check_sample_sheet {
-    module 'modules:java/latest:modules-init:modules-gs:python/3.6.4'
-
     input:
 	val params.sample_sheet
     file star_file
@@ -144,7 +139,6 @@ sample_sheet_file5 = good_sample_sheet
 
 process make_sample_sheet {
     cache 'lenient'
-    module 'java/latest:modules:modules-init:modules-gs:python/3.6.4'
 
     input:
         val params.run_dir
@@ -173,11 +167,8 @@ if (params.max_cores > 16) {
 
 process bcl2fastq {
     cache 'lenient'
-    module 'java/latest:modules:modules-init:modules-gs:gmp/5.0.2'
-    module 'mpfr/3.1.0:mpc/0.8.2:gcc/4.9.1:bcl2fastq/2.20'
-    penv 'serial'
     cpus max_cores_bcl
-    memory "$bcl_mem" + " GB"    
+    memory "${bcl_mem}G"
 
     input:
         file bcl_samp_sheet
@@ -216,10 +207,7 @@ fastqs.into { fastqs_path1; fastqs_path2 }
 
 process seg_sample_fastqs1 {
     cache 'lenient'
-    module 'java/latest:modules:modules-init:modules-gs:python/3.6.4:zlib/1.2.6:pigz/2.3'
-    penv 'serial'
-    memory '1 GB'
-    cpus 8 
+
     publishDir path: "${params.output_dir}/", pattern: "demux_out/*fastq.gz", mode: 'link'     
     publishDir  path: "${params.output_dir}/demux_out/", pattern: "*.csv", mode: 'copy'
     publishDir  path: "${params.output_dir}/demux_out/", pattern: "*.json", mode: 'copy'
@@ -255,9 +243,6 @@ out_dir_str = params.output_dir.replaceAll("/\\z", "");
 project_name = out_dir_str.substring(out_dir_str.lastIndexOf("/")+1);
 
 process demux_dash1 {
-    module 'java/latest:modules:modules-init:modules-gs:gcc/8.1.0:R/3.6.1'
-    memory '8 GB'    
-
     publishDir path: "${params.output_dir}/", pattern: "demux_dash", mode: 'copy'
 
     input:
@@ -287,10 +272,7 @@ process demux_dash1 {
 
 process seg_sample_fastqs2 {
     cache 'lenient'
-    module 'java/latest:modules:modules-init:modules-gs:python/3.6.4:zlib/1.2.6:pigz/2.3'
-    memory '1 GB'    
-    penv 'serial'
-    cpus 8
+
     input:
         set file(R1), file(R2) from fastqs_path2.splitFastq(by: params.fastq_chunk_size, file: true, pe: true)
         file sample_sheet_file3
@@ -328,7 +310,6 @@ samp_fastqs_check
 
 process recombine_fastqs {
     cache 'lenient'
-    module 'java/latest:modules:modules-init:modules-gs:python/3.6.4'
     publishDir  path: "${params.output_dir}/demux_out", pattern: "*.fastq.gz", mode: 'move'
 
     input:
@@ -353,7 +334,6 @@ csv_stats
 
 process recombine_csvs {
     cache 'lenient'
-    module 'java/latest:modules:modules-init:modules-gs:python/3.6.4'
     publishDir  path: "${params.output_dir}/demux_out/", pattern: "*.csv", mode: 'copy'
 
     input:
@@ -385,7 +365,6 @@ json_stats
 
 process recombine_jsons {
     cache 'lenient'
-    module 'java/latest:modules:modules-init:modules-gs:python/3.6.4'
     publishDir  path: "${params.output_dir}/demux_out/", pattern: "*.json", mode: 'copy'
 
     input:
@@ -477,11 +456,7 @@ out_dir_str = params.output_dir.replaceAll("/\\z", "");
 project_name = out_dir_str.substring(out_dir_str.lastIndexOf("/")+1);
 
 process demux_dash {
-    module 'java/latest:modules:modules-init:modules-gs:gcc/8.1.0:R/3.6.1'
-    memory '8 GB'    
-
     publishDir path: "${params.output_dir}/", pattern: "demux_dash", mode: 'copy'
-
 
     input:
         file demux_stats_csvs from all_csv.collect()
@@ -512,10 +487,9 @@ process demux_dash {
 save_recovery2 = {params.output_dir + "/recovery_output/" +  it - ~/.fastq.gz-summary.txt/ + "-recovery_summary.txt"}
 save_recovery = {params.output_dir + "/recovery_output/" +  it - ~/.fastq.gz.txt/ + "-recovery_table.txt"}
 process run_recovery {
-    module 'modules:java/latest:modules-init:modules-gs:python/3.6.4'
-    memory '4 GB'
     publishDir path: "${params.output_dir}/recovery_output", saveAs: save_recovery, pattern: "*.gz.txt", mode: 'link'
     publishDir path: "${params.output_dir}/recovery_output", saveAs: save_recovery2, pattern: "*-summary.txt", mode: 'link'
+
     input:
         file input from Channel.fromPath("${params.demux_out}/Undetermined*")
         file sample_sheet_file5
@@ -541,8 +515,6 @@ process run_recovery {
 }
 
 process sum_recovery {
-    module 'modules:java/latest:modules-init:modules-gs:python/3.6.4'
-    memory '4 GB'
     publishDir path: "${params.output_dir}/demux_dash/js/", pattern: "recovery_summary.js", mode: 'move'
 
     input:

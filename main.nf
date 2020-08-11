@@ -168,7 +168,7 @@ if (params.max_cores > 16) {
 process bcl2fastq {
     cache 'lenient'
     cpus max_cores_bcl
-    memory "${bcl_mem}G"
+    memory "${bcl_mem} GB"
 
     input:
         file bcl_samp_sheet

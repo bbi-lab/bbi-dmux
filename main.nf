@@ -2,7 +2,7 @@
 ** Check that Nextflow version meets minimum version requirements.
 */
 def minMajorVersion = 20
-def minMinorVersion = 0
+def minMinorVersion = 07
 checkNextflowVersion( minMajorVersion, minMinorVersion )
 
 
@@ -29,6 +29,7 @@ params.generate_samplesheets = 'no_input'
 params.max_cores = 16
 params.max_wells_per_sample = 20
 
+params.multi_exp = 0
 params.p5_cols = 0
 params.p7_rows = 0
 params.p5_wells = 0
@@ -55,11 +56,12 @@ if (params.help) {
     log.info '    params.sample_sheet = SAMPLE_SHEET_PATH    Sample sheet of the format described in the README.'
     log.info '    params.level = 3                           Level of run - either 2 or 3.'
     log.info ''
-    log.info 'Required parameters (one of the pairs below is required - p7_wells and p5_wells or p7_rows and p5_cols):'
+    log.info 'Required parameters (one of the pairs below is required - p7_wells and p5_wells or p7_rows and p5_cols or mult-exp):'
     log.info '    params.p7_wells = "A1 B1 C1"               Alternative to p7_rows and p5_cols - specify specific PCR wells instead of full rows/columns. Must match order of params.p5_wells.'
     log.info '    params.p5_wells = "A1 A2 A3"               Alternative to p7_rows and p5_cols - specify specific PCR wells instead of full rows/columns. Must match order of params.p7_wells.'
     log.info '    params.p7_rows = "A B C"                   The PCR rows used - must match order of params.p5_cols.'
     log.info '    params.p5_cols = "1 2 3"                   The PCR columns used - must match order of params.p7_rows.'
+    log.info '    params.multi_exp = "see config"            The PCR columns used for each experiment in map format - see example.config.'
     log.info ''
     log.info ''
     log.info 'Optional parameters (specify in your config file):'
@@ -233,6 +235,7 @@ process seg_sample_fastqs1 {
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
         --p5_wells_used $params.p5_wells --p7_wells_used $params.p7_wells \
         --rt_barcode_file $params.rt_barcode_file \
+        --multi_exp "$params.multi_exp" \
         --output_dir ./demux_out --level $params.level
     pigz -p 8 demux_out/*.fastq
     """    

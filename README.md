@@ -74,6 +74,8 @@ Then, install monocle3 by running:
 
 ```
 module load gcc/8.1.0
+module load proj/4.9.3
+module load gdal/2.4.1
 module load pcre2/10.35
 module load R/4.0.0
 R
@@ -124,7 +126,7 @@ RT Barcode,Sample ID,Reference Genome
 
 #### Configuration file:
 
-The second thing you need are configuration files that pass in arguments to the pipeline. These are the *experiment.config* and *nextflow.config* files.
+The second things you need are configuration files that pass in arguments to the pipeline. These are the *experiment.config* and *nextflow.config* files.
 
 ##### *experiment.config* file
 

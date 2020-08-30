@@ -264,18 +264,18 @@ if __name__ == '__main__':
         all_p5 = ""
         exp_lookup = {}
         for key,value in args.multi_exp.items():
-            all_p7 += value[0]
-            all_p5 += value[1]
-            if len(value[0].split(" ")[0]) == 1:
-                p5s = [int(x) for x in value[1].split(" ")]
-                combos = get_programmed_pcr_combos(p5_lookup, p7_lookup, p5s, value[0].split(" "))
+            all_p7 += value[0].strip() + " "
+            all_p5 += value[1].strip() + " "
+            if len(value[0].strip().split(" ")[0]) == 1:
+                p5s = [int(x) for x in value[1].strip().split(" ")]
+                combos = get_programmed_pcr_combos(p5_lookup, p7_lookup, p5s, value[0].strip().split(" "))
             else:
-                combos = get_programmed_pcr_combos_wells(value[1].split(" "), value[0].split(" "))
+                combos = get_programmed_pcr_combos_wells(value[1].strip().split(" "), value[0].strip().split(" "))
             temp_dict = dict(zip(combos, [key]*len(combos)))
             exp_lookup.update(temp_dict)
         
-        all_p7 = all_p7.split(" ")
-        all_p5 = all_p5.split(" ")
+        all_p7 = all_p7.strip().split(" ")
+        all_p5 = all_p5.strip().split(" ")
 
         if len(all_p7[0]) == 1:
             args.p7_rows_used = all_p7

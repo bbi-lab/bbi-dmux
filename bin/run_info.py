@@ -64,6 +64,10 @@ import re
 #      Additional values may be recorded in the log
 #      files.
 
+
+version = '20200831.1'
+
+
 application_name_dict = {
     'NextSeq Control': 'NextSeq500',
     'NextSeq 1000/2000': 'NextSeq2000',
@@ -102,11 +106,17 @@ def get_application_info( tree ):
       application_version: string with run application version
     """
     application_name = None
+    # most machines store the machine name string in the tag 'ApplicationName'
     for application_name in tree.getroot().iter( 'ApplicationName' ):
         application_name = application_name.text
         break
+    # NovaSeq stores the machine name string in the tag 'Application'
     if( application_name == None ):
-        raise ValueError( 'ApplicationName element missing in BCL RunParameters.xml' )
+        for application_name in tree.getroot().iter( 'Application' ):
+            application_name = application_name.text
+            break
+    if( application_name == None ):
+        raise ValueError( 'Unable to find Application* element in BCL RunParameters.xml' )
 
     application_version = None
     for application_version in tree.getroot().iter( 'ApplicationVersion' ):
@@ -301,7 +311,6 @@ def get_run_info_miseq( instrument_model, application_version, tree ):
     return run_stats
 
 
-# Note: I have not tested this function because I have no RunParameter.xml file (20200724).
 def get_run_info_novaseq( instrument_model, application_version, tree ):
     """
     Helper function to get some info about the sequencing runs.
@@ -316,29 +325,35 @@ def get_run_info_novaseq( instrument_model, application_version, tree ):
     if setup_node is None:
         setup_node = tree.getroot()
 
-    flowcell_node = tree.getroot().find("FlowCellRfidTag")
-    instrument_id_node = tree.getroot().find('InstrumentID')
+    flowcell_node = tree.getroot().find("RfidsInfo")
+    instrument_id_node = tree.getroot().find('InstrumentName')
     run_start_date_node = tree.getroot().find('RunStartDate')
 
     # Now actually populate various stats
-    run_stats['flow_cell_id'] = flowcell_node.find('SerialNumber').text
+    run_stats['flow_cell_id'] = flowcell_node.find('FlowCellSerialBarcode').text
     run_stats['date'] = run_start_date_node.text
     run_stats['instrument'] = instrument_id_node.text
-    run_stats['lanes'] = int(setup_node.find('NumLanes').text)
-    run_stats['run_id'] = tree.getroot().find('RunID').text    
+    run_stats['flow_cell_mode'] = flowcell_node.find('FlowCellMode').text
+    if( run_stats['flow_cell_mode'] == 'SP' or run_stats['flow_cell_mode'] == 'S1' or run_stats['flow_cell_mode'] == 'S2' ):
+        run_stats['lanes'] = 2
+    elif( run_stats['flow_cell_mode'] == 'S4' ):
+        run_stats['lanes'] = 4 
+    else:
+        raise ValueError( 'Unrecognized flow cell mode \'%s\'' % ( run_stats['flow_cell_mode'] ) )
+    run_stats['run_id'] = tree.getroot().find('RunId').text    
    
     # Read1 and Read2 may be absent 
-    run_stats['r1_length'] = int(setup_node.find('Read1').text)
-    run_stats['p7_index_length'] = int(setup_node.find('PlannedIndex1ReadCycles').text)
+    run_stats['r1_length'] = int(setup_node.find('Read1NumberOfCycles').text)
+    run_stats['p7_index_length'] = int(setup_node.find('IndexRead1NumberOfCycles').text)
 
-    if( setup_node.find('Read2') != None ):
-        run_stats['r2_length'] = int(setup_node.find('Read2').text)
-        run_stats['p5_index_length'] = int(setup_node.find('PlannedIndex2ReadCycles').text)
+    if( setup_node.find('Read2NumberOfCycles') != None ):
+        run_stats['r2_length'] = int(setup_node.find('Read2NumberOfCycles').text)
+        run_stats['p5_index_length'] = int(setup_node.find('IndexRead2NumberOfCycles').text)
         run_stats['paired_end'] = True
     else:
         run_stats['paired_end'] = False
 
-    application = setup_node.find('ApplicationName').text
+    application = setup_node.find('Application').text
     application_version = setup_node.find('ApplicationVersion')
 
     run_stats['instrument_type'] = instrument_model

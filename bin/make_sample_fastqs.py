@@ -159,8 +159,8 @@ if __name__ == '__main__':
         p5_lookup = {bu.reverse_complement(sequence): well for sequence,well in p5_lookup.items()}
     p5_lookup = {sequence[0:args.p5_length]: well for sequence,well in p5_lookup.items()}
 
-    if args.multi_exp != 0:
-        multi_exp = True
+    multi_exp = True if ( args.multi_exp != 0 ) else False
+    if multi_exp:
         all_p7 = ""
         all_p5 = ""
         exp_lookup = {}

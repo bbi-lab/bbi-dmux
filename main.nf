@@ -33,6 +33,7 @@ params.p5_cols = 0
 params.p7_rows = 0
 params.p5_wells = 0
 params.p7_wells = 0
+params.p7_index_length = 10
 
 //print usage
 if (params.help) {
@@ -60,6 +61,7 @@ if (params.help) {
     log.info '    params.p5_wells = "A1 A2 A3"               Alternative to p7_rows and p5_cols - specify specific PCR wells instead of full rows/columns. Must match order of params.p7_wells.'
     log.info '    params.p7_rows = "A B C"                   The PCR rows used - must match order of params.p5_cols.'
     log.info '    params.p5_cols = "1 2 3"                   The PCR columns used - must match order of params.p7_rows.'
+    log.info '    params.p7_index_length = 10                The expected P7 index length if it is less than the value in the Illumina RunParameters.xml file.'
     log.info ''
     log.info ''
     log.info 'Optional parameters (specify in your config file):'
@@ -127,7 +129,7 @@ process check_sample_sheet {
         params.generate_samplesheets == "no_input"
 
     """
-    check_sample_sheet.py --sample_sheet $params.sample_sheet --star_file $star_file --level $params.level --rt_barcode_file $params.rt_barcode_file --max_wells_per_samp $params.max_wells_per_sample    
+    check_sample_sheet.py --sample_sheet $params.sample_sheet --star_file $star_file --level $params.level --rt_barcode_file $params.rt_barcode_file --max_wells_per_samp $params.max_wells_per_sample
     """
 }
 
@@ -151,8 +153,7 @@ process make_sample_sheet {
         !params.run_recovery
 
     """
-    make_sample_sheet.py --run_directory $params.run_dir
-
+    make_sample_sheet.py --run_directory $params.run_dir --p7_length $params.p7_index_length
     """    
 }
 
@@ -233,6 +234,7 @@ process seg_sample_fastqs1 {
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
         --p5_wells_used $params.p5_wells --p7_wells_used $params.p7_wells \
         --rt_barcode_file $params.rt_barcode_file \
+        --p7_length $params.p7_index_length \
         --output_dir ./demux_out --level $params.level
     pigz -p 8 demux_out/*.fastq
     """    
@@ -294,6 +296,7 @@ process seg_sample_fastqs2 {
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
         --p5_wells_used $params.p5_wells --p7_wells_used $params.p7_wells \
         --rt_barcode_file $params.rt_barcode_file \
+        --p7_length $params.p7_index_length \
         --output_dir ./demux_out --level $params.level
     pigz -p 8 demux_out/*.fastq    
     """    

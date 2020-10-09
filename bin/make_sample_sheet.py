@@ -51,6 +51,7 @@ if __name__ == '__main__':
 
     # Required args
     parser.add_argument('--run_directory', required=True, help='Path to BCL directory for sequencing run.')
+    parser.add_argument('--p7_length', type=int, default=None, help='Expected P7 index length.')
     args = parser.parse_args()
 
     # Get simple things like index lengths and flow cell ID for the run
@@ -65,9 +66,13 @@ if __name__ == '__main__':
         p5_indices = {x:bu.reverse_complement(y) for x,y in p5_indices.items()}
     p5_indices = {x: y[0:run_info['p5_index_length']] for x,y in p5_indices.items()}
 
-    p7_indices = load_barcode_file(P7_FILE, run_info['p7_index_length'])
+    if( args.p7_length ):
+       p7_index_length = args.p7_length
+    else:
+       p7_index_length = run_info['p7_index_length']
+    p7_indices = load_barcode_file(P7_FILE, p7_index_length)
 
-    sample_sheet_text = get_sample_sheet_text(run_info['p7_index_length'], run_info['p5_index_length'])
+    sample_sheet_text = get_sample_sheet_text(p7_index_length, run_info['p5_index_length'])
     sample_sheet_path = os.path.join('SampleSheet.csv')    
     with open(sample_sheet_path, 'w') as sample_sheet:
         sample_sheet.write(sample_sheet_text)

@@ -44,8 +44,8 @@ params.p5_cols = 0
 params.p7_rows = 0
 params.p5_wells = 0
 params.p7_wells = 0
-# Note the p5 and p7 index lengths must have default value 'false' in order
-# to use the values in RunParameters.xml, which is the typical case.
+// Note the p5 and p7 index lengths must have default value 'false' in order
+// to use the values in RunParameters.xml, which is the typical case.
 params.p5_index_length = false
 params.p7_index_length = false
 

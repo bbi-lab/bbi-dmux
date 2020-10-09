@@ -3,7 +3,7 @@
 #             from in an Illumina run directory.
 #
 # Notes:
-#   o  the master file is bbi-dmux/bin/run_info.py
+#   o  the master file is bbi-dmux-data/illumina_run_parameters/src/run_info.py
 #      Make changes to the master file and distribute
 #      to all other pipelines that use it in order to
 #      maintain consistency.

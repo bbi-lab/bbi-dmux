@@ -1,3 +1,14 @@
+import groovy.json.JsonSlurper
+
+/*
+** Where to find scripts.
+** Note: script_dir needs to be visible within Groovy functions
+**       so there is no 'def', which makes it global.
+*/
+pipeline_path="$workflow.projectDir"
+script_dir="${pipeline_path}/bin"
+
+
 /*
 ** Check that Nextflow version meets minimum version requirements.
 */
@@ -33,7 +44,11 @@ params.p5_cols = 0
 params.p7_rows = 0
 params.p5_wells = 0
 params.p7_wells = 0
-params.p7_index_length = 10
+# Note the p5 and p7 index lengths must have default value 'false' in order
+# to use the values in RunParameters.xml, which is the typical case.
+params.p5_index_length = false
+params.p7_index_length = false
+
 
 //print usage
 if (params.help) {
@@ -61,11 +76,12 @@ if (params.help) {
     log.info '    params.p5_wells = "A1 A2 A3"               Alternative to p7_rows and p5_cols - specify specific PCR wells instead of full rows/columns. Must match order of params.p7_wells.'
     log.info '    params.p7_rows = "A B C"                   The PCR rows used - must match order of params.p5_cols.'
     log.info '    params.p5_cols = "1 2 3"                   The PCR columns used - must match order of params.p7_rows.'
-    log.info '    params.p7_index_length = 10                The expected P7 index length if it is less than the value in the Illumina RunParameters.xml file.'
     log.info ''
     log.info ''
     log.info 'Optional parameters (specify in your config file):'
     log.info '    params.rt_barcode_file = "default"         The path to a custom RT barcode file. If "default", default BBI barcodes will be used.'
+    log.info '    params.p5_index_length = false             The P5 index length if it is not the value in the Illumina RunParameters.xml file.'
+    log.info '    params.p7_index_length = false             The P7 index length if it is not the value in the Illumina RunParameters.xml file.'
     log.info '    params.max_cores = 16                      The maximum number of cores to use - fewer will be used if appropriate.'
     log.info '    process.maxForks = 20                      The maximum number of processes to run at the same time on the cluster.'
     log.info '    process.queue = "trapnell-short.q"         The queue on the cluster where the jobs should be submitted. '
@@ -80,6 +96,29 @@ if (params.help) {
     log.info 'Issues? Contact hpliner@uw.edu'
     exit 1
 }
+
+/*
+** Read Illumina run information.
+*/
+illuminaRunInfoMap = readIlluminaRunInfo( params )
+
+/*
+** Set p5_index_length and p7_index_length.
+*/
+if( params.p5_index_length == false ) {
+  p5_index_length = illuminaRunInfoMap['p5_index_length']
+}
+else {
+  p5_index_length = params.p5_index_length
+}
+
+if( params.p7_index_length == false ) {
+  p7_index_length = illuminaRunInfoMap['p7_index_length']
+}
+else {
+  p7_index_length = params.p7_index_length
+}
+
 
 process generate_sheets {
     publishDir path: "${params.output_dir}", pattern: "SampleSheet.csv", mode: 'copy'
@@ -153,7 +192,7 @@ process make_sample_sheet {
         !params.run_recovery
 
     """
-    make_sample_sheet.py --run_directory $params.run_dir --p7_length $params.p7_index_length
+    make_sample_sheet.py --run_directory $params.run_dir --p5_length $p5_index_length --p7_length $p7_index_length
     """    
 }
 
@@ -234,7 +273,8 @@ process seg_sample_fastqs1 {
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
         --p5_wells_used $params.p5_wells --p7_wells_used $params.p7_wells \
         --rt_barcode_file $params.rt_barcode_file \
-        --p7_length $params.p7_index_length \
+        --p5_length $p5_index_length \
+        --p7_length $p7_index_length \
         --output_dir ./demux_out --level $params.level
     pigz -p 8 demux_out/*.fastq
     """    
@@ -296,7 +336,8 @@ process seg_sample_fastqs2 {
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
         --p5_wells_used $params.p5_wells --p7_wells_used $params.p7_wells \
         --rt_barcode_file $params.rt_barcode_file \
-        --p7_length $params.p7_index_length \
+        --p5_length $p5_index_length \
+        --p7_length $p7_index_length \
         --output_dir ./demux_out --level $params.level
     pigz -p 8 demux_out/*.fastq    
     """    
@@ -618,6 +659,32 @@ def getOSInfo()
     osRelease = proc.text.trim()
   }
   return( [ osName, osDistribution, osRelease ] )
+}
+
+
+/*
+** readIlluminaRunInfo()
+**
+** Purpose: read Illumina RunParameters.xml file and return selected parameters.
+**
+** Returns:
+**   Groovy 'map' that contains run info.
+*/
+def readIlluminaRunInfo( params ) {
+    def command = "${script_dir}/read_run_info.py ${params.run_dir}"
+    def strOut = new StringBuffer()
+    def strErr = new StringBuffer()
+    def proc = command.execute()
+    def jsonSlurper = new JsonSlurper()
+
+    proc.consumeProcessOutput(strOut, strErr)
+    proc.waitForProcessOutput()
+    if( proc.exitValue() != 0 ) {
+        System.err << strErr.toString()
+        System.exit( -1 )
+    }
+    illuminaRunInfoMap = jsonSlurper.parseText(strOut.toString())
+    return( illuminaRunInfoMap )
 }
 
 

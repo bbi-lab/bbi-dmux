@@ -1,9 +1,15 @@
 #!/usr/bin/python3
 
 #
-# This script is used in
-#    o  bbi-dmux/data/illumina_run_parameters/
-#    o  bbi-sciatac-demux/main.nf
+# Notes:
+#   o  the master file is bbi-dmux-data/illumina_run_parameters/src/run_info.py
+#      Make changes to the master file and distribute
+#      to all other pipelines that use it in order to
+#      maintain consistency.
+#   o  this script is used in
+#        o  bbi-dmux-data/illumina_run_parameters/src
+#        o  bbi-dmux/main.nf
+#        o  bbi-sciatac-demux/main.nf
 #
 
 import sys

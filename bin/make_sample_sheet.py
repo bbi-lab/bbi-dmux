@@ -73,7 +73,6 @@ if __name__ == '__main__':
         raise ValueError('Single-end reads detected: paired-end reads required')
 
     # Set up samplesheet for BCL2FASTQ
-    p5_indices = load_barcode_file(P5_FILE)
     reverse_i5 = run_info['reverse_complement_i5']
     if reverse_i5:
         p5_indices = {x:bu.reverse_complement(y) for x,y in p5_indices.items()}

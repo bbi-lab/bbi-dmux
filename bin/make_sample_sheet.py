@@ -55,6 +55,11 @@ if __name__ == '__main__':
     parser.add_argument('--p7_length', type=int, default=None, help='Expected P7 index length.')
     args = parser.parse_args()
 
+    # Get simple things like index lengths and flow cell ID for the run
+    run_info = run_info.get_run_info(args.run_directory)
+    if( run_info['paired_end'] == False ):
+        raise ValueError('Single-end reads detected: paired-end reads required')
+
     if( args.p5_length ):
        p5_index_length = args.p5_length
     else:
@@ -66,11 +71,6 @@ if __name__ == '__main__':
     else:
        p7_index_length = run_info['p7_index_length']
     p7_indices = load_barcode_file(P7_FILE, p7_index_length)
-
-    # Get simple things like index lengths and flow cell ID for the run
-    run_info = run_info.get_run_info(args.run_directory)
-    if( run_info['paired_end'] == False ):
-        raise ValueError('Single-end reads detected: paired-end reads required')
 
     # Set up samplesheet for BCL2FASTQ
     reverse_i5 = run_info['reverse_complement_i5']

@@ -298,7 +298,6 @@ process seg_sample_fastqs2 {
         --p5_wells_used $params.p5_wells --p7_wells_used $params.p7_wells \
         --rt_barcode_file $params.rt_barcode_file \
         --multi_exp "$params.multi_exp" \
-
         --output_dir ./demux_out --level $params.level
     pigz -p 8 demux_out/*.fastq    
     """    

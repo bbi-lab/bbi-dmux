@@ -334,9 +334,9 @@ def get_run_info_novaseq( instrument_model, application_version, tree ):
     run_stats['date'] = run_start_date_node.text
     run_stats['instrument'] = instrument_id_node.text
     run_stats['flow_cell_mode'] = flowcell_node.find('FlowCellMode').text
-    if( run_stats['flow_cell_mode'] in [ 'SP', 'S1', 'S2' ] ):
+    if( run_stats['flow_cell_mode'] == 'SP' or run_stats['flow_cell_mode'] == 'S1' or run_stats['flow_cell_mode'] == 'S2' ):
         run_stats['lanes'] = 2
-    elif( run_stats['flow_cell_mode'] in [ 'S4' ] ):
+    elif( run_stats['flow_cell_mode'] == 'S4' ):
         run_stats['lanes'] = 4 
     else:
         raise ValueError( 'Unrecognized flow cell mode \'%s\'' % ( run_stats['flow_cell_mode'] ) )

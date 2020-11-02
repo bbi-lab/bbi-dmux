@@ -53,6 +53,7 @@ if __name__ == '__main__':
     parser.add_argument('--run_directory', required=True, help='Path to BCL directory for sequencing run.')
     args = parser.parse_args()
 
+    #run_stats['date'] = run_start_date_node.text
     # Get simple things like index lengths and flow cell ID for the run
     run_info = run_info.get_run_info(args.run_directory)
     if( run_info['paired_end'] == False ):

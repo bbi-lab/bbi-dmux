@@ -31,9 +31,9 @@ qlogin -l mfree=16G
 
 ## Installation
 
-If you install the pipeline on a cluster with a mix of CPU architectures, 
+If you install the pipeline on a cluster with a mix of CPU architectures,
 then when you qlogin to the cluster for the installation procedure,
-request a node with the minimum CPU ID level on which you intend to run the pipeline. 
+request a node with the minimum CPU ID level on which you intend to run the pipeline.
 For example, on the Shendure lab cluster use
 
 ```
@@ -54,7 +54,7 @@ module load python/3.7.7
 You must also have a few modules other than python loaded:
 
 ```
-module load git/2.19.1
+module load git/2.18.0
 ```
 
 After loading the above modules, you must install the following python packages:
@@ -63,6 +63,7 @@ After loading the above modules, you must install the following python packages:
 pip install --user biopython
 pip install --user fmt
 pip install --user pysam
+pip install --user matplotlib
 
 git clone https://github.com/andrewhill157/barcodeutils.git
 pushd barcodeutils
@@ -70,7 +71,7 @@ python setup.py install --user
 popd
 ```
 
-Then, install monocle3 by running:
+Then, install monocle3 and garnett by running:
 
 ```
 module load gcc/8.1.0
@@ -81,8 +82,25 @@ module load R/4.0.0
 R
 ```
 Then from within R, follow the installation instructions on the [monocle3 website](https://cole-trapnell-lab.github.io/monocle3/).
+And the instructions for garnett on the [Garnett website](https://cole-trapnell-lab.github.io/garnett/docs_m3/#install-from-github).
 
-Once monocle3 is installed, install nextflow by typing:
+You will also require scrublet, a tool used to detect doublets in single-cell RNA-seq data. You can install it from source by running:
+
+```
+git clone https://github.com/AllonKleinLab/scrublet.git
+pushd scrublet
+pip install -r requirements.txt --user
+python setup.py install --user
+popd
+```
+
+Please note: If you are doing a hashing experiment, you will also need to install scipy in order to run the pipeline successfully. You can do this by running:
+
+```
+pip install --user scipy
+```
+
+Once monocle3 and scrublet are installed, install nextflow by typing:
 
 ```
 curl -s https://get.nextflow.io | bash

@@ -495,12 +495,28 @@ if __name__ == '__main__':
                 write_to_undetermined(entry)
                 continue
 
-            if rt_barcode not in sample_rt_lookup:
-                total_unused_rt_well += 1
-                write_to_undetermined(entry)
-                continue
+#             if rt_barcode not in sample_rt_lookup:
+#                 total_unused_rt_well += 1
+#                 write_to_undetermined(entry)
+#                 continue
 
-            sample = sample_rt_lookup[rt_barcode]
+            if multi_exp:
+                experiment = exp_lookup[(p5, p7)]
+                if (rt_barcode, experiment) not in sample_rt_exp_lookup:
+                    total_unused_rt_well += 1
+                    write_to_undetermined(entry)
+                    continue
+                sample = sample_rt_exp_lookup[(rt_barcode, experiment)]
+
+            else:
+                if rt_barcode not in sample_rt_lookup:
+                    total_unused_rt_well += 1
+                    write_to_undetermined(entry)
+                    continue
+                sample = sample_rt_lookup[rt_barcode]
+
+#            sample = sample_rt_lookup[rt_barcode]
+
             sample_read_name = sample.split(".fq.part")[0]
             sample_read_number = sample_read_counts[sample] + 1
             sample_read_counts[sample] += 1

@@ -3,7 +3,7 @@
 #             from in an Illumina run directory.
 #
 # Notes:
-#   o  the master file is bbi-dmux/bin/run_info.py
+#   o  the master file is bbi-dmux-data/illumina_run_parameters/src/run_info.py
 #      Make changes to the master file and distribute
 #      to all other pipelines that use it in order to
 #      maintain consistency.
@@ -65,7 +65,7 @@ import re
 #      files.
 
 
-version = '20200831.1'
+version = '20210305.1'
 
 
 application_name_dict = {
@@ -77,16 +77,18 @@ application_name_dict = {
 
 
 #
+# This dictionary is no longer used.
+#
 # Is the p5 index reverse complemented?
 #
-SEQUENCERS_P5_RC_MAP = {
-    'NextSeq500': True,
-    'NextSeq2000': True,
-    'MiSeq': False,
-    'NovaSeq': False,
-    'HiSeq3000': False,
-    'HiSeq4000': True
-}
+# SEQUENCERS_P5_RC_MAP = {
+#     'NextSeq500': True,
+#     'NextSeq2000': True,
+#     'MiSeq': False,
+#     'NovaSeq': False,
+#     'HiSeq3000': False,
+#     'HiSeq4000': True
+# }
 
 
 def open_file(f, mode='rt'):
@@ -179,7 +181,7 @@ def get_run_info( flow_cell_path ):
         run_stats['instrument_type'] = 'unknown'
     
     # reverse_complement_i5 is used in fastq sequence demultiplexing
-    run_stats['reverse_complement_i5'] = reverse_complement_i5( run_stats['instrument_type'] )
+#     run_stats['reverse_complement_i5'] = reverse_complement_i5( run_stats['instrument_type'] )
 
     return( run_stats )
 
@@ -218,6 +220,7 @@ def get_run_info_nextseq500( instrument_model, application_version, tree ):
         run_stats['paired_end'] = False
 
     run_stats['instrument_type'] = instrument_model
+    run_stats['reverse_complement_i5'] = True
 
     return run_stats
 
@@ -259,6 +262,7 @@ def get_run_info_nextseq2000( instrument_model, application_version, tree ):
         run_stats['paired_end'] = False
 
     run_stats['instrument_type'] = instrument_model
+    run_stats['reverse_complement_i5'] = True
 
     return run_stats
 
@@ -307,6 +311,7 @@ def get_run_info_miseq( instrument_model, application_version, tree ):
       run_stats['paired_end'] = True
 
     run_stats['instrument_type'] = instrument_model
+    run_stats['reverse_complement_i5'] = False
 
     return run_stats
 
@@ -334,9 +339,9 @@ def get_run_info_novaseq( instrument_model, application_version, tree ):
     run_stats['date'] = run_start_date_node.text
     run_stats['instrument'] = instrument_id_node.text
     run_stats['flow_cell_mode'] = flowcell_node.find('FlowCellMode').text
-    if( run_stats['flow_cell_mode'] == 'SP' or run_stats['flow_cell_mode'] == 'S1' or run_stats['flow_cell_mode'] == 'S2' ):
+    if( run_stats['flow_cell_mode'] in [ 'SP', 'S1', 'S2' ] ):
         run_stats['lanes'] = 2
-    elif( run_stats['flow_cell_mode'] == 'S4' ):
+    elif( run_stats['flow_cell_mode'] in [ 'S4' ] ):
         run_stats['lanes'] = 4 
     else:
         raise ValueError( 'Unrecognized flow cell mode \'%s\'' % ( run_stats['flow_cell_mode'] ) )
@@ -354,9 +359,37 @@ def get_run_info_novaseq( instrument_model, application_version, tree ):
         run_stats['paired_end'] = False
 
     application = setup_node.find('Application').text
-    application_version = setup_node.find('ApplicationVersion')
+    application_version = setup_node.find('ApplicationVersion').text
 
     run_stats['instrument_type'] = instrument_model
+
+    # Notes:
+    #   o  NovaSeq application 1.7.0 can run reagent kit version 1.0 and 1.5
+    #   o  the NWGC tells us:
+    #      The NovaSeq v1.5 reagents are run on the NovaSeq that has an updated
+    #      software which is version 1.7 that flips the i5 indices already on
+    #      the sequencer when the data comes off. Typically, when the data
+    #      comes off the sequencers, we need to flip both the i7 and i5 indices
+    #      to the reverse complement in order to run fastqs or demux the data.
+    #      With this being the case, only the i7 will need to be reverse
+    #      complemented typically when data comes off the v1.5 version.
+    #   o  however, not reverse complementing v1.5 fastqs in demultiplexing
+    #      gives 'normal' looking sample-specific fastq files so I do not
+    #      reverse complement here but allow for the possiblity in future
+    #      reagent kits.
+    #   o  The SBS consumable version differs between the two kits.  The line is
+    #      <SbsConsumableVersion>1</SbsConsumableVersion>
+    #        Key
+    #        1= v1.0 SBS Reagents
+    #        3= v1.5 SBS Reagents
+    if( application_version == '1.7.0' ):
+        sbs_consumable_version = flowcell_node.find('SbsConsumableVersion').text
+        if( sbs_consumable_version == '1' ):
+            run_stats['reverse_complement_i5'] = False
+        elif( sbs_consumable_version == '3' ):
+            run_stats['reverse_complement_i5'] = False
+    else:
+        run_stats['reverse_complement_i5'] = False
 
     return run_stats
 
@@ -395,32 +428,40 @@ def get_run_info_hiseq( instrument_model, application_version, tree ):
         run_stats['paired_end'] = False
 
     run_stats['instrument_type'] = instrument_model
+    if( instrument_model == 'HiSeq3000' ):
+        run_stats['reverse_complement_i5'] = False
+    elif( instrument_model == 'HiSeq4000' ):
+        run_stats['reverse_complement_i5'] = True
+    else:
+        print( 'Error: unrecognized HiSeq model: \'%s\'' % ( instrument_model ) )
+        sys.exit( -1 )
 
     return( run_stats )
 
 
-def reverse_complement_i5(name):
-    """
-    Take a BCL directory or instrument type (NextSeq500, NextSeq2000, MiSeq,
-    NovaSeq, HiSeq4000, HiSeq3000, ...) and return whether or not i5 should
-    be reverse complemented. This assumes that NextSeq instruments and other
-    similar machines should be reverse complemented whereas MiSeq should not.
-    Args:
-        name (str): BCL directory or one of the instrument types as mentioned above    
-    
-    Returns:
-        bool: True if user would typically reverse complement i5 index and False otherwise.
-    """
-    
-    if name in SEQUENCERS_P5_RC_MAP:
-        sequencer_type = name
-    elif os.path.exists(name):
-        sequencer_type = get_run_info(name)['instrument_type']
-        
-        if sequencer_type not in SEQUENCERS_P5_RC_MAP:
-            raise ValueError('Sequencer type detected from BCL is %s, which is not in our known list of which sequencers require P5 reverse complementing or not.' % sequencer_type)
-    else:
-        raise ValueError('Invalid input, could not detect BCL or instrument ID.')
-
-    return SEQUENCERS_P5_RC_MAP[sequencer_type]
-
+# The following code is no longer used, I believe.
+#
+# def reverse_complement_i5(name):
+#     """
+#     Take a BCL directory or instrument type (NextSeq500, NextSeq2000, MiSeq,
+#     NovaSeq, HiSeq4000, HiSeq3000, ...) and return whether or not i5 should
+#     be reverse complemented. This assumes that NextSeq instruments and other
+#     similar machines should be reverse complemented whereas MiSeq should not.
+#     Args:
+#         name (str): BCL directory or one of the instrument types as mentioned above    
+#     
+#     Returns:
+#         bool: True if user would typically reverse complement i5 index and False otherwise.
+#     """
+#     
+#     if name in SEQUENCERS_P5_RC_MAP:
+#         sequencer_type = name
+#     elif os.path.exists(name):
+#         sequencer_type = get_run_info(name)['instrument_type']
+#         
+#         if sequencer_type not in SEQUENCERS_P5_RC_MAP:
+#             raise ValueError('Sequencer type detected from BCL is %s, which is not in our known list of which sequencers require P5 reverse complementing or not.' % sequencer_type)
+#     else:
+#         raise ValueError('Invalid input, could not detect BCL or instrument ID.')
+# 
+#     return SEQUENCERS_P5_RC_MAP[sequencer_type]

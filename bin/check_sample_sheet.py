@@ -17,6 +17,13 @@ if __name__ == '__main__':
     parser.add_argument('--max_wells_per_sample', required=True, help='Maximum number of wells per sample - for efficiency')
     args = parser.parse_args()
 
+    # Check first line to see if the UTF encoding is wrong:
+    with open(args.sample_sheet, 'r') as f:
+        fline = f.readline().strip().split(",")
+        if fline[0][0:1] == '\ufeff':
+            sys.stderr.write("The samplesheet has the wrong UTF encoding. Please see the troubleshooting section of https://github.com/bbi-lab/bbi-dmux for more information.\n")
+            error_flag = 1
+
     if args.rt_barcode_file == "default":
         if args.level == "3":
             rtfile = RT3_FILE

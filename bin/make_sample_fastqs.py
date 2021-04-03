@@ -239,6 +239,9 @@ if __name__ == '__main__':
     parser.add_argument('--p5_length', type=int, default=10, help='Expected P5 index length.')
     parser.add_argument('--level', required=True, help = "2 or 3 level sci?")
     parser.add_argument('--rt_barcode_file', required=True, help='Path to RT barcode file, or "default".')
+    parser.add_argument('--p5_barcode_file', required=True, help='Path to p5 barcode file, or "default".')
+    parser.add_argument('--p7_barcode_file', required=True, help='Path to p7 barcode file, or "default".')
+
     args = parser.parse_args()
 
     if args.p5_cols_used == ["none"] or args.p5_wells_used == ["none"]:
@@ -261,6 +264,17 @@ if __name__ == '__main__':
             rtfile = RT_FILE
     else:
         rtfile = args.rt_barcode_file
+
+    if args.p5_barcode_file == "default":
+        p5file = P5_FILE
+    else:
+        p5file = args.p5_barcode_file
+
+    if args.p7_barcode_file == "default":
+        p7file = P7_FILE
+    else:
+        p7file = args.p7_barcode_file
+
     lane_num = args.file_name
     lane_num = lane_num.replace("Undetermined_S0_L", "L")
     lane_num = lane_num.replace("_R1_001.fastq.gz", "")
@@ -275,10 +289,10 @@ if __name__ == '__main__':
         ligation_10_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 10}
 
     # Load barcodes
-    p7_lookup = bu.load_whitelist(P7_FILE)
+    p7_lookup = bu.load_whitelist(p7file)
     p7_lookup = {sequence[0:args.p7_length]: well for sequence,well in p7_lookup.items()}
 
-    p5_lookup = bu.load_whitelist(P5_FILE)
+    p5_lookup = bu.load_whitelist(p5file)
     if reverse_complement_i5:
         p5_lookup = {bu.reverse_complement(sequence): well for sequence,well in p5_lookup.items()}
     p5_lookup = {sequence[0:args.p5_length]: well for sequence,well in p5_lookup.items()}

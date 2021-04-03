@@ -36,3 +36,18 @@ Mouse,Testis,/net/bbi/vol1/data/garnett_classifiers/mm_testis_MCA_mf.RDS
 Mouse,Thymus,/net/bbi/vol1/data/garnett_classifiers/mm_thymus_MCA_mf.RDS
 Mouse,Uterus,/net/bbi/vol1/data/garnett_classifiers/mm_uterus_MCA_mf.RDS
 C. elegans,Whole,/net/bbi/vol1/data/garnett_classifiers/ce_whole_Cao.RDS
+Human,Brain,/net/bbi/vol1/data/garnett_classifiers/hs_cerebrum_fetal.RDS
+Human,Kidney,/net/bbi/vol1/data/garnett_classifiers/hs_kidney_fetal.RDS
+Human,Heart,/net/bbi/vol1/data/garnett_classifiers/hs_heart_fetal.RDS
+Human,Eye,/net/bbi/vol1/data/garnett_classifiers/hs_eye_fetal.RDS
+Human,Spleen,/net/bbi/vol1/data/garnett_classifiers/hs_spleen_fetal.RDS
+Human,Brain,/net/bbi/vol1/data/garnett_classifiers/hs_cerebellum_fetal.RDS
+Human,Stomach,/net/bbi/vol1/data/garnett_classifiers/hs_stomach_fetal.RDS
+Human,Placenta,/net/bbi/vol1/data/garnett_classifiers/hs_placenta_fetal.RDS
+Human,Intestine,/net/bbi/vol1/data/garnett_classifiers/hs_intestine_fetal.RDS
+Human,Lung,/net/bbi/vol1/data/garnett_classifiers/hs_lung_fetal.RDS
+Human,Thymus,/net/bbi/vol1/data/garnett_classifiers/hs_thymus_fetal.RDS
+Human,Muscle,/net/bbi/vol1/data/garnett_classifiers/hs_muscle_fetal.RDS
+Human,Liver,/net/bbi/vol1/data/garnett_classifiers/hs_liver_fetal.RDS
+Human,Adrenal,/net/bbi/vol1/data/garnett_classifiers/hs_adrenal_fetal.RDS
+Human,Pancreas,/net/bbi/vol1/data/garnett_classifiers/hs_pancreas_fetal.RDS

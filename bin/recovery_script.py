@@ -9,9 +9,6 @@ import xml.etree.ElementTree as ET
 import operator
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
-P5_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/p5.txt')
-P7_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/p7.txt')
-LIG_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/ligation.txt')
 
 NEXTSEQ = 'NextSeq'
 NEXTSEQ2000 = 'NextSeq 1000/2000'
@@ -604,6 +601,9 @@ if __name__ == '__main__':
     parser.add_argument('--p7_length', type=int, default=10, help='Expected P7 index length.')
     parser.add_argument('--p5_length', type=int, default=10, help='Expected P5 index length.')
     parser.add_argument('--level', required=True, help = "2 or 3 level sci?")
+    parser.add_argument('--p5_barcode_file', required=True, help='Path to p5 barcode file, or "default".')
+    parser.add_argument('--p7_barcode_file', required=True, help='Path to p7 barcode file, or "default".')
+    parser.add_argument('--lig_barcode_file', required=True, help='Path to ligation barcode file, or "default".')
     args = parser.parse_args()
 
     if args.p5_cols_used == ["none"] or args.p5_wells_used == ["none"]:
@@ -621,9 +621,22 @@ if __name__ == '__main__':
 
     rt_file = os.path.join(SCRIPT_DIR, 'barcode_files/rt2.txt')
     rt3_file = os.path.join(SCRIPT_DIR, 'barcode_files/rt.txt')
+    p5_file = os.path.join(SCRIPT_DIR, 'barcode_files/p5.txt')
+    p7_file = os.path.join(SCRIPT_DIR, 'barcode_files/p7.txt') 
+    lig_file = os.path.join(SCRIPT_DIR, 'barcode_files/ligation.txt')
+
     if args.rt_barcodes != "default":
         rt_file = args.rt_barcodes
         rt3_file = args.rt_barcodes
+
+    if args.p5_barcode_file != "default":
+        p5_file = args.p5_barcode_file
+
+    if args.p7_barcode_file != "default":
+        p7_file = args.p7_barcode_file
+
+    if args.lig_barcode_file != "default":
+        lig_file = args.lig_barcode_file
 
     sample_rt_lookup = load_sample_layout(args.sample_layout)
 
@@ -631,7 +644,7 @@ if __name__ == '__main__':
         p7_whitelist = ["none", "no_correct"]
         p7_lookup = {"none":"none"}
     else:
-        p7_lookup = bu.load_whitelist(P7_FILE)
+        p7_lookup = bu.load_whitelist(p7_file)
         p7_lookup = {sequence[0:args.p7_length]: well for sequence,well in p7_lookup.items()}
         p7_whitelist = bu.construct_mismatch_to_whitelist_map(p7_lookup, edit_distance = 1)
 
@@ -639,7 +652,7 @@ if __name__ == '__main__':
         p5_whitelist = ["none", "no_correct"]
         p5_lookup = {"none":"none"}
     else:
-        p5_lookup = bu.load_whitelist(P5_FILE)
+        p5_lookup = bu.load_whitelist(p5_file)
         if reverse_complement_i5(args.run_directory):
             p5_lookup = {bu.reverse_complement(sequence): well for sequence,well in p5_lookup.items()}
         p5_lookup = {sequence[0:args.p5_length]: well for sequence,well in p5_lookup.items()}
@@ -655,7 +668,7 @@ if __name__ == '__main__':
     rt3_lookup = bu.load_whitelist(rt3_file)
     rt3_whitelist = bu.construct_mismatch_to_whitelist_map(rt3_lookup, edit_distance = 1)
 
-    ligation_lookup = bu.load_whitelist(LIG_FILE, variable_lengths=True)
+    ligation_lookup = bu.load_whitelist(lig_file, variable_lengths=True)
     lig_9_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 9}
     lig_10_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 10}
             

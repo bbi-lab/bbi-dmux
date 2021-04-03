@@ -241,7 +241,7 @@ if __name__ == '__main__':
     parser.add_argument('--rt_barcode_file', required=True, help='Path to RT barcode file, or "default".')
     parser.add_argument('--p5_barcode_file', required=True, help='Path to p5 barcode file, or "default".')
     parser.add_argument('--p7_barcode_file', required=True, help='Path to p7 barcode file, or "default".')
-
+    parser.add_argument('--lig_barcode_file', required=True, help='Path to ligation barcode file, or "default".')
     args = parser.parse_args()
 
     if args.p5_cols_used == ["none"] or args.p5_wells_used == ["none"]:
@@ -274,6 +274,11 @@ if __name__ == '__main__':
         p7file = P7_FILE
     else:
         p7file = args.p7_barcode_file
+    
+    if args.lig_barcode_file == "default":
+        ligfile = LIG_FILE
+    else:
+        ligfile = args.lig_barcode_file
 
     lane_num = args.file_name
     lane_num = lane_num.replace("Undetermined_S0_L", "L")
@@ -284,7 +289,7 @@ if __name__ == '__main__':
     reverse_complement_i5 = reverse_complement_i5(args.run_directory)
 
     if args.level == "3":
-        ligation_lookup = bu.load_whitelist(LIG_FILE, variable_lengths=True)
+        ligation_lookup = bu.load_whitelist(ligfile, variable_lengths=True)
         ligation_9_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 9}
         ligation_10_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 10}
 

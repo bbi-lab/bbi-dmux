@@ -20,9 +20,9 @@ if __name__ == '__main__':
     # Check first line to see if the UTF encoding is wrong:
     with open(args.sample_sheet, 'r') as f:
         fline = f.readline().strip().split(",")
-        if fline[0][0:1] == '\ufeff':
+        if fline[0] != "" and (fline[0][0] == '\ufeff' or fline[0][0] == '\xef'):
             sys.stderr.write("The samplesheet has the wrong UTF encoding. Please see the troubleshooting section of https://github.com/bbi-lab/bbi-dmux for more information.\n")
-            error_flag = 1
+            sys.exit(20)
 
     if args.rt_barcode_file == "default":
         if args.level == "3":

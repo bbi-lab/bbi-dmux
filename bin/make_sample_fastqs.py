@@ -142,6 +142,9 @@ if __name__ == '__main__':
     parser.add_argument('--multi_exp', type=ast.literal_eval)
     parser.add_argument('--level', required=True, help = "2 or 3 level sci?")
     parser.add_argument('--rt_barcode_file', required=True, help='Path to RT barcode file, or "default".')
+    parser.add_argument('--p5_barcode_file', required=True, help='Path to p5 barcode file, or "default".')
+    parser.add_argument('--p7_barcode_file', required=True, help='Path to p7 barcode file, or "default".')
+    parser.add_argument('--lig_barcode_file', required=True, help='Path to ligation barcode file, or "default".')
     args = parser.parse_args()
 
     run_info = run_info.get_run_info( args.run_directory )
@@ -212,13 +215,41 @@ if __name__ == '__main__':
     else:
         rtfile = args.rt_barcode_file
 
+    if args.p5_barcode_file == "default":
+        p5file = P5_FILE
+    else:
+        p5file = args.p5_barcode_file
+
+    if args.p7_barcode_file == "default":
+        p7file = P7_FILE
+    else:
+        p7file = args.p7_barcode_file
+    
+    if args.lig_barcode_file == "default":
+        ligfile = LIG_FILE
+    else:
+        ligfile = args.lig_barcode_file
+
+    lane_num = args.file_name
+    lane_num = lane_num.replace("Undetermined_S0_L", "L")
+    lane_num = lane_num.replace("_R1_001.fastq.gz", "")
+    stats_file = os.path.join(args.output_dir, lane_num + ".stats.json")
+    suffix = lane_num + ".fastq"
 
     # Load and process ligation barcodes
     if args.level == "3":
-        ligation_lookup = bu.load_whitelist(LIG_FILE, variable_lengths=True)
+        ligation_lookup = bu.load_whitelist(ligfile, variable_lengths=True)
         ligation_9_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 9}
         ligation_10_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 10}
 
+    # Load barcodes
+    p7_lookup = bu.load_whitelist(p7file)
+    p7_lookup = {sequence[0:args.p7_length]: well for sequence,well in p7_lookup.items()}
+
+    p5_lookup = bu.load_whitelist(p5file)
+    if reverse_complement_i5:
+        p5_lookup = {bu.reverse_complement(sequence): well for sequence,well in p5_lookup.items()}
+    p5_lookup = {sequence[0:args.p5_length]: well for sequence,well in p5_lookup.items()}
 
     # Define where all sequences are and what the whitelists are
     if p5_none:
@@ -528,7 +559,7 @@ if __name__ == '__main__':
 
             r2_qual = entry['r2_qual']
             r2_seq = entry['r2_seq']
-            output_name = f'@{sample_read_name}-P7{p5}-P5{p7}_{sample_read_number}|{sample_read_name}|{p5}|{p7}|{rt_barcode}|{umi}'
+            output_name = f'@{sample_read_name}-P5{p5}-P7{p7}_{sample_read_number}|{sample_read_name}|{p5}|{p7}|{rt_barcode}|{umi}'
             output_line = f'{output_name}\n{r2_seq}\n+\n{r2_qual}\n'
             sample_to_output_file_lookup[sample].write(output_line)
 

@@ -24,6 +24,9 @@ params.bcl_max_mem = 40
 params.fastq_chunk_size = 100000000
 params.run_recovery = false
 params.rt_barcode_file="default"
+params.p5_barcode_file="default"
+params.p7_barcode_file="default"
+params.lig_barcode_file="default"
 params.large = false
 params.generate_samplesheets = 'no_input'
 params.max_cores = 16
@@ -66,6 +69,9 @@ if (params.help) {
     log.info ''
     log.info 'Optional parameters (specify in your config file):'
     log.info '    params.rt_barcode_file = "default"         The path to a custom RT barcode file. If "default", default BBI barcodes will be used.'
+    log.info '    params.p7_barcode_file = "default"         The path to a custom p7 barcode file. If "default", default BBI barcodes will be used.'
+    log.info '    params.p5_barcode_file = "default"         The path to a custom p5 barcode file. If "default", default BBI barcodes will be used.'
+    log.info '    params.lig_barcode_file = "default"        The path to a custom ligation barcode file. If "default", default BBI barcodes will be used.'
     log.info '    params.max_cores = 16                      The maximum number of cores to use - fewer will be used if appropriate.'
     log.info '    process.maxForks = 20                      The maximum number of processes to run at the same time on the cluster.'
     log.info '    process.queue = "trapnell-short.q"         The queue on the cluster where the jobs should be submitted. '
@@ -235,7 +241,11 @@ process seg_sample_fastqs1 {
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
         --p5_wells_used $params.p5_wells --p7_wells_used $params.p7_wells \
         --rt_barcode_file $params.rt_barcode_file \
+        --p5_barcode_file $params.p5_barcode_file \
+        --p7_barcode_file $params.p7_barcode_file \
+        --lig_barcode_file $params.lig_barcode_file \
         --multi_exp "$params.multi_exp" \
+
         --output_dir ./demux_out --level $params.level
     pigz -p 8 demux_out/*.fastq
     """    
@@ -297,6 +307,9 @@ process seg_sample_fastqs2 {
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
         --p5_wells_used $params.p5_wells --p7_wells_used $params.p7_wells \
         --rt_barcode_file $params.rt_barcode_file \
+        --p5_barcode_file $params.p5_barcode_file \
+        --p7_barcode_file $params.p7_barcode_file \
+        --lig_barcode_file $params.lig_barcode_file \
         --multi_exp "$params.multi_exp" \
         --output_dir ./demux_out --level $params.level
     pigz -p 8 demux_out/*.fastq    
@@ -511,6 +524,9 @@ process run_recovery {
         --sample_layout $sample_sheet_file5 \
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
         --p5_wells_used $params.p5_wells --p7_wells_used $params.p7_wells \
+        --p7_barcode_file $params.p7_barcode_file \
+        --p5_barcode_file $params.p5_barcode_file \
+        --lig_barcode_file $params.lig_barcode_file \
         --level $params.level \
         --rt_barcodes $params.rt_barcode_file
 

@@ -212,6 +212,19 @@ rm -r work/
 
 Warning: After you delete the work folder, -resume will no longer restart from the middle of the run, you'll have to start from the beginning if you need to regenerate any files. So please make sure that your pipeline has fully completed before deleting the work folder.
 
+#### Troubleshooting:
+
+##### I got a "UTF encoding" error for my samplesheet
+If you get this error, it means that the python script for reading the samplesheet encountered an issue with the UTC encoding
+of your samplesheet. We haven't pinpointed why this sometimes happens (probably something to do with your Excel settings when making 
+the sheet), but fixing it is pretty straight forward. You have two options:
+- Option 1 (from the terminal): Open the samplesheet in the terminal (using your preferred editor, e.g. vim or nano) and 
+copy the contents by highlighting and using Cmd + C or Ctrl + C. Open a new file in your editor and paste the contents. Save and 
+use this new file as your samplesheet.
+
+- Option 2 (from your local computer): Open the samplesheet in Excel and use Save As to save the sheet using the file format 
+"Comma Separated Values (.csv)". Use this new file as your samplesheet. 
+
 #### Questions and errors:
 If you run into problems, please leave a detailed description in the issue tab above!
 

@@ -245,7 +245,6 @@ process seg_sample_fastqs1 {
         --p7_barcode_file $params.p7_barcode_file \
         --lig_barcode_file $params.lig_barcode_file \
         --multi_exp "$params.multi_exp" \
-
         --output_dir ./demux_out --level $params.level
     pigz -p 8 demux_out/*.fastq
     """    

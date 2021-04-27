@@ -18,13 +18,6 @@ if __name__ == '__main__':
     parser.add_argument('--max_wells_per_sample', required=True, help='Maximum number of wells per sample - for efficiency')
     args = parser.parse_args()
 
-    # Check first line to see if the UTF encoding is wrong:
-    with open(args.sample_sheet, 'r') as f:
-        fline = f.readline().strip().split(",")
-        if fline[0] != "" and (fline[0][0] == '\ufeff' or fline[0][0] == '\xef'):
-            sys.stderr.write("The samplesheet has the wrong UTF encoding. Please see the troubleshooting section of https://github.com/bbi-lab/bbi-dmux for more information.\n")
-            sys.exit(20)
-
     if args.rt_barcode_file == "default":
         if args.level == "3":
             rtfile = RT3_FILE
@@ -61,6 +54,7 @@ if __name__ == '__main__':
         return error_flag
 
     def fix_line(line, fix):
+        line = '%s\n' % ( line.strip() )
         line = line.split(",")
         line[1] = well_dict[line[0]]
         if fix == 0:
@@ -81,6 +75,7 @@ if __name__ == '__main__':
             return ",".join(line)
 
     def fix_line_exp(line, fix):
+        line = '%s\n' % ( line.strip() )
         line = line.split(",")
         line[1] = well_dict[(line[0],line[3])]
         if fix == 0:

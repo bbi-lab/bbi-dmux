@@ -147,7 +147,7 @@ if __name__ == '__main__':
     parser.add_argument('--lig_barcode_file', required=True, help='Path to ligation barcode file, or "default".')
     args = parser.parse_args()
 
-    run_info = run_info.get_run_info( args.run_directory )
+    run_info = run_info.get_run_info( args.run_directory, pipeline_type='RNA-seq' )
     if( run_info['paired_end'] == False ):
         raise ValueError('Single-end reads detected: paired-end reads required')
 

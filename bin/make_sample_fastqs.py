@@ -145,8 +145,10 @@ if __name__ == '__main__':
     parser.add_argument('--p5_barcode_file', required=True, help='Path to p5 barcode file, or "default".')
     parser.add_argument('--p7_barcode_file', required=True, help='Path to p7 barcode file, or "default".')
     parser.add_argument('--lig_barcode_file', required=True, help='Path to ligation barcode file, or "default".')
+    parser.add_argument('--buffer_blocks', required=True, help="Number of 8k buffer blocks to use for writing")
     args = parser.parse_args()
 
+    buffer_size = int(args.buffer_blocks) * 8192
     run_info = run_info.get_run_info( args.run_directory )
     if( run_info['paired_end'] == False ):
         raise ValueError('Single-end reads detected: paired-end reads required')
@@ -350,17 +352,17 @@ if __name__ == '__main__':
     if multi_exp:
         sample_rt_exp_lookup = load_sample_layout(args.sample_layout, multi_exp)
         sample_to_output_filename_lookup = {sample: os.path.join(args.output_dir, '%s-%s' % (sample, suffix)) for well,sample in sample_rt_exp_lookup.items()}
-        sample_to_output_file_lookup = {sample: open(filename, 'w') for sample,filename in sample_to_output_filename_lookup.items()}
+        sample_to_output_file_lookup = {sample: open(filename, 'w', buffering=buffer_size) for sample,filename in sample_to_output_filename_lookup.items()}
         print("Demuxing %s samples (%s total RT wells) into their own files..." % (len(sample_to_output_filename_lookup), len(sample_rt_exp_lookup)))
 
      
     else:
         sample_rt_lookup = load_sample_layout(args.sample_layout, multi_exp)
         sample_to_output_filename_lookup = {sample: os.path.join(args.output_dir, '%s-%s' % (sample, suffix)) for well,sample in sample_rt_lookup.items()}
-        sample_to_output_file_lookup = {sample: open(filename, 'w') for sample,filename in sample_to_output_filename_lookup.items()}
+        sample_to_output_file_lookup = {sample: open(filename, 'w', buffering=buffer_size) for sample,filename in sample_to_output_filename_lookup.items()}
         print("Demuxing %s samples (%s total RT wells) into their own files..." % (len(sample_to_output_filename_lookup), len(sample_rt_lookup)))
 
-    undetermined = open(os.path.join(args.output_dir, '%s-%s' % ("Undetermined", suffix)), 'w')
+    undetermined = open(os.path.join(args.output_dir, '%s-%s' % ("Undetermined", suffix)), 'w', buffering=buffer_size)
      
     # Set up some basic tracking for each sample
     sample_read_counts = {}

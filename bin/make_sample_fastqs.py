@@ -148,8 +148,10 @@ if __name__ == '__main__':
     parser.add_argument('--buffer_blocks', required=True, help="Number of 8k buffer blocks to use for writing")
     args = parser.parse_args()
 
+
     buffer_size = int(args.buffer_blocks) * 8192
-    run_info = run_info.get_run_info( args.run_directory )
+    run_info = run_info.get_run_info( args.run_directory, pipeline_type='RNA-seq' )
+
     if( run_info['paired_end'] == False ):
         raise ValueError('Single-end reads detected: paired-end reads required')
 

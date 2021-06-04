@@ -65,7 +65,7 @@ import re
 #      files.
 
 
-version = '20210305.1'
+version = '20210429.1'
 
 
 application_name_dict = {
@@ -146,11 +146,12 @@ def get_application_info( tree ):
     return( instrument_model, application_version )
 
 
-def get_run_info( flow_cell_path ):
+def get_run_info( flow_cell_path, pipeline_type='RNA-seq' ):
     """
     Helper function to get some info about the sequencing runs.
     Args:
         flow_cell_path (str): Path to BCL directory for run.
+        pipeline_type (str): Processing pipeline type. Either 'RNA-seq' or 'ATAC-seq'.
     Returns:
         dict: basic statistics about run, like date, instrument, number of lanes, flowcell ID, read lengths, etc.
     """
@@ -174,7 +175,7 @@ def get_run_info( flow_cell_path ):
     elif( instrument_model == 'MiSeq' ):
         run_stats = get_run_info_miseq( instrument_model, application_version, tree )
     elif( instrument_model == 'NovaSeq' ):
-        run_stats = get_run_info_novaseq( instrument_model, application_version, tree )
+        run_stats = get_run_info_novaseq( instrument_model, application_version, tree, pipeline_type )
     elif( instrument_model == 'HiSeq3000' or instrument_model == 'HiSeq4000' ):
         run_stats = get_run_info_hiseq( instrument_model, application_version, tree )
     else:
@@ -316,7 +317,7 @@ def get_run_info_miseq( instrument_model, application_version, tree ):
     return run_stats
 
 
-def get_run_info_novaseq( instrument_model, application_version, tree ):
+def get_run_info_novaseq( instrument_model, application_version, tree, pipeline_type ):
     """
     Helper function to get some info about the sequencing runs.
     Args:
@@ -387,7 +388,12 @@ def get_run_info_novaseq( instrument_model, application_version, tree ):
         if( sbs_consumable_version == '1' ):
             run_stats['reverse_complement_i5'] = False
         elif( sbs_consumable_version == '3' ):
-            run_stats['reverse_complement_i5'] = False
+            if( pipeline_type == 'RNA-seq' ):
+              run_stats['reverse_complement_i5'] = True
+            elif( pipeline_type == 'ATAC-seq' ):
+              run_stats['reverse_complement_i5'] = False
+            else:
+              raise ValueError('Unrecognized pipeline_type value \'%s\'' % ( pipeline_type ))
     else:
         run_stats['reverse_complement_i5'] = False
 
@@ -465,3 +471,4 @@ def get_run_info_hiseq( instrument_model, application_version, tree ):
 #         raise ValueError('Invalid input, could not detect BCL or instrument ID.')
 # 
 #     return SEQUENCERS_P5_RC_MAP[sequencer_type]
+

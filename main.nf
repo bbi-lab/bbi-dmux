@@ -31,6 +31,7 @@ params.large = false
 params.generate_samplesheets = 'no_input'
 params.max_cores = 16
 params.max_wells_per_sample = 20
+params.demux_buffer_blocks = 16
 
 params.multi_exp = 0
 params.p5_cols = 0
@@ -80,6 +81,7 @@ if (params.help) {
     log.info '    params.bcl_max_mem = 40                    The maximum number of GB of RAM to assign for bcl2fastq'
     log.info '    params.large = false                       Is this a very large run? If true, the fastqs will be split - note that for smaller runs this will make the pipeline run more slowly.'
     log.info '    params.max_wells_per_sample = 20           The maximum number of wells per sample - if a sample is in more wells, the fastqs will be split then reassembled.'
+    log.info '    params.demux_buffer_blocks = 16            The number of 8K blocks to use for demux output buffer.'
     log.info '    --run_recovery true                        Add this to run the recovery script AFTER running the normal pipeline.'
     log.info '    --generate_samplesheets input_csv          Add this to generate the necessary samplesheet from the BBI universal input sheet.'    
     log.info ''
@@ -245,6 +247,7 @@ process seg_sample_fastqs1 {
         --p7_barcode_file $params.p7_barcode_file \
         --lig_barcode_file $params.lig_barcode_file \
         --multi_exp "$params.multi_exp" \
+        --buffer_blocks $params.demux_buffer_blocks \
         --output_dir ./demux_out --level $params.level
     pigz -p 8 demux_out/*.fastq
     """    
@@ -310,6 +313,7 @@ process seg_sample_fastqs2 {
         --p7_barcode_file $params.p7_barcode_file \
         --lig_barcode_file $params.lig_barcode_file \
         --multi_exp "$params.multi_exp" \
+        --buffer_blocks $params.demux_buffer_blocks \
         --output_dir ./demux_out --level $params.level
     pigz -p 8 demux_out/*.fastq    
     """    

@@ -180,7 +180,7 @@ def get_run_info( flow_cell_path, pipeline_type='RNA-seq' ):
         run_stats = get_run_info_hiseq( instrument_model, application_version, tree )
     else:
         run_stats['instrument_type'] = 'unknown'
-    
+
     # reverse_complement_i5 is used in fastq sequence demultiplexing
 #     run_stats['reverse_complement_i5'] = reverse_complement_i5( run_stats['instrument_type'] )
 
@@ -191,7 +191,7 @@ def get_run_info_nextseq500( instrument_model, application_version, tree ):
     """
     Helper function to get some info about the sequencing runs.
     Args:
-        tree: xml tree 
+        tree: xml tree
     Returns:
         dict: basic statistics about run, like date, instrument, number of lanes, flowcell ID, read lengths, etc.
     """
@@ -209,7 +209,7 @@ def get_run_info_nextseq500( instrument_model, application_version, tree ):
     run_stats['date'] = tree.getroot().find('RunStartDate').text
     run_stats['instrument'] = tree.getroot().find('InstrumentID').text
     run_stats['lanes'] = int(setup_node.find('NumLanes').text)
-    run_stats['run_id'] = tree.getroot().find('RunID').text    
+    run_stats['run_id'] = tree.getroot().find('RunID').text
     run_stats['r1_length'] = int(setup_node.find('Read1').text)
     run_stats['p7_index_length'] = int(setup_node.find('Index1Read').text)
 
@@ -230,7 +230,7 @@ def get_run_info_nextseq2000( instrument_model, application_version, tree ):
     """
     Helper function to get some info about the sequencing runs.
     Args:
-        tree: xml tree 
+        tree: xml tree
     Returns:
         dict: basic statistics about run, like date, instrument, number of lanes, flowcell ID, read lengths, etc.
     """
@@ -272,7 +272,7 @@ def get_run_info_miseq( instrument_model, application_version, tree ):
     """
     Helper function to get some info about the sequencing runs.
     Args:
-        tree: xml tree 
+        tree: xml tree
     Returns:
         dict: basic statistics about run, like date, instrument, number of lanes, flowcell ID, read lengths, etc.
     """
@@ -291,7 +291,7 @@ def get_run_info_miseq( instrument_model, application_version, tree ):
     run_stats['date'] = tree.getroot().find('RunStartDate').text
     run_stats['instrument'] = tree.getroot().find('ScannerID').text
     run_stats['lanes'] = int(setup_node.find('NumLanes').text)
-    run_stats['run_id'] = tree.getroot().find('RunID').text    
+    run_stats['run_id'] = tree.getroot().find('RunID').text
 
     read_len = []
     index_len = []
@@ -321,7 +321,7 @@ def get_run_info_novaseq( instrument_model, application_version, tree, pipeline_
     """
     Helper function to get some info about the sequencing runs.
     Args:
-        tree: xml tree 
+        tree: xml tree
     Returns:
         dict: basic statistics about run, like date, instrument, number of lanes, flowcell ID, read lengths, etc.
     """
@@ -343,12 +343,12 @@ def get_run_info_novaseq( instrument_model, application_version, tree, pipeline_
     if( run_stats['flow_cell_mode'] in [ 'SP', 'S1', 'S2' ] ):
         run_stats['lanes'] = 2
     elif( run_stats['flow_cell_mode'] in [ 'S4' ] ):
-        run_stats['lanes'] = 4 
+        run_stats['lanes'] = 4
     else:
         raise ValueError( 'Unrecognized flow cell mode \'%s\'' % ( run_stats['flow_cell_mode'] ) )
-    run_stats['run_id'] = tree.getroot().find('RunId').text    
-   
-    # Read1 and Read2 may be absent 
+    run_stats['run_id'] = tree.getroot().find('RunId').text
+
+    # Read1 and Read2 may be absent
     run_stats['r1_length'] = int(setup_node.find('Read1NumberOfCycles').text)
     run_stats['p7_index_length'] = int(setup_node.find('IndexRead1NumberOfCycles').text)
 
@@ -389,7 +389,7 @@ def get_run_info_novaseq( instrument_model, application_version, tree, pipeline_
             run_stats['reverse_complement_i5'] = False
         elif( sbs_consumable_version == '3' ):
             if( pipeline_type == 'RNA-seq' ):
-              run_stats['reverse_complement_i5'] = True
+              run_stats['reverse_complement_i5'] = False
             elif( pipeline_type == 'ATAC-seq' ):
               run_stats['reverse_complement_i5'] = False
             else:
@@ -404,7 +404,7 @@ def get_run_info_hiseq( instrument_model, application_version, tree ):
     """
     Helper function to get some info about the sequencing runs.
     Args:
-        tree: xml tree 
+        tree: xml tree
     Returns:
         dict: basic statistics about run, like date, instrument, number of lanes, flowcell ID, read lengths, etc.
     """
@@ -421,8 +421,8 @@ def get_run_info_hiseq( instrument_model, application_version, tree ):
     run_stats['date'] = setup_node.find('RunStartDate').text
     run_stats['instrument'] = setup_node.find('ScannerID').text
     run_stats['lanes'] = 1
-    run_stats['run_id'] = setup_node.find('RunID').text    
-    
+    run_stats['run_id'] = setup_node.find('RunID').text
+
     run_stats['r1_length'] = int(setup_node.find('Read1').text)
     run_stats['p7_index_length'] = int(setup_node.find('IndexRead1').text)
 
@@ -454,21 +454,20 @@ def get_run_info_hiseq( instrument_model, application_version, tree ):
 #     be reverse complemented. This assumes that NextSeq instruments and other
 #     similar machines should be reverse complemented whereas MiSeq should not.
 #     Args:
-#         name (str): BCL directory or one of the instrument types as mentioned above    
-#     
+#         name (str): BCL directory or one of the instrument types as mentioned above
+#
 #     Returns:
 #         bool: True if user would typically reverse complement i5 index and False otherwise.
 #     """
-#     
+#
 #     if name in SEQUENCERS_P5_RC_MAP:
 #         sequencer_type = name
 #     elif os.path.exists(name):
 #         sequencer_type = get_run_info(name)['instrument_type']
-#         
+#
 #         if sequencer_type not in SEQUENCERS_P5_RC_MAP:
 #             raise ValueError('Sequencer type detected from BCL is %s, which is not in our known list of which sequencers require P5 reverse complementing or not.' % sequencer_type)
 #     else:
 #         raise ValueError('Invalid input, could not detect BCL or instrument ID.')
-# 
+#
 #     return SEQUENCERS_P5_RC_MAP[sequencer_type]
-

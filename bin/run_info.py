@@ -65,7 +65,7 @@ import re
 #      files.
 
 
-version = '20210429.1'
+version = '20210819.1'
 
 
 application_name_dict = {
@@ -383,13 +383,13 @@ def get_run_info_novaseq( instrument_model, application_version, tree, pipeline_
     #        Key
     #        1= v1.0 SBS Reagents
     #        3= v1.5 SBS Reagents
-    if( application_version == '1.7.0' ):
+    if( application_version == '1.7.0' or application_version == '1.7.5' ):
         sbs_consumable_version = flowcell_node.find('SbsConsumableVersion').text
         if( sbs_consumable_version == '1' ):
             run_stats['reverse_complement_i5'] = False
         elif( sbs_consumable_version == '3' ):
             if( pipeline_type == 'RNA-seq' ):
-              run_stats['reverse_complement_i5'] = False
+              run_stats['reverse_complement_i5'] = True
             elif( pipeline_type == 'ATAC-seq' ):
               run_stats['reverse_complement_i5'] = False
             else:

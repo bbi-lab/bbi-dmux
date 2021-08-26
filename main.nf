@@ -503,11 +503,10 @@ process demux_dash {
 */
 
 
-
 save_recovery2 = {params.output_dir + "/recovery_output/" +  it - ~/.fastq.gz-summary.txt/ + "-recovery_summary.txt"}
-save_recovery = {params.output_dir + "/recovery_output/" +  it - ~/.fastq.gz.txt/ + "-recovery_table.txt"}
+save_recovery = {params.output_dir + "/recovery_output/" +  it - ~/.fastq.gz.txt.gz/ + "-recovery_table.txt.gz"}
 process run_recovery {
-    publishDir path: "${params.output_dir}/recovery_output", saveAs: save_recovery, pattern: "*.gz.txt", mode: 'link'
+    publishDir path: "${params.output_dir}/recovery_output", saveAs: save_recovery, pattern: "*.gz.txt.gz", mode: 'link'
     publishDir path: "${params.output_dir}/recovery_output", saveAs: save_recovery2, pattern: "*-summary.txt", mode: 'link'
 
     input:
@@ -515,7 +514,7 @@ process run_recovery {
         file sample_sheet_file5
 
     output:
-        file "*.txt"
+        file "*gz.txt.gz"
         file "*summary.txt" into summaries
     when:
         params.run_recovery
@@ -533,6 +532,7 @@ process run_recovery {
         --level $params.level \
         --rt_barcodes $params.rt_barcode_file
 
+     pigz -p 1 *.fastq.gz.txt
     """
 
 }

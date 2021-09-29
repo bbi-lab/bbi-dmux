@@ -177,7 +177,15 @@ workflow {
     ** ================================================================================
     */
     if (!params.large) {
-        seg_sample_fastqs1( fastqs, sample_sheet_file )
+        seg_sample_fastqs1(
+            fastqs,
+            run_parameters_file,
+            sample_sheet_file,
+            rt_barcode_file
+            p5_barcode_file
+            p7_barcode_file
+            lig_barcode_file
+        )
 
         csv_stats = seg_sample_fastqs1.out.csv_stats
         json_stats = seg_sample_fastqs1.out.json_stats
@@ -190,7 +198,15 @@ workflow {
     */
     else {
         fastq_chunks = fastqs.splitFastq(by: params.fastq_chunk_size, file: true, pe: true)
-        seg_sample_fastqs2( fastq_chunks, sample_sheet_file )
+        seg_sample_fastqs2( 
+            fastq_chunks,
+            run_parameters_file,
+            sample_sheet_file,
+            rt_barcode_file
+            p5_barcode_file
+            p7_barcode_file
+            lig_barcode_file
+        )
 
         all_csv_stats = seg_sample_fastqs2.out.csv_stats
         all_json_stats = seg_sample_fastqs2.out.json_stats

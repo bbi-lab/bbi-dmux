@@ -38,7 +38,7 @@ process check_sample_sheet {
 set -Eeuo pipefail
 
 check_sample_sheet.py \
-    --sample_sheet $sample_sheet \ 
+    --sample_sheet $sample_sheet \
     --star_file $star_file \
     --level $level \
     --rt_barcode_file $rt_barcode_file \

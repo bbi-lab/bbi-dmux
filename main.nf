@@ -1,9 +1,4 @@
-/*
-** Check that Nextflow version meets minimum version requirements.
-*/
-def minMajorVersion = 20
-def minMinorVersion = 07
-checkNextflowVersion( minMajorVersion, minMinorVersion )
+
 nextflow.enable.dsl=2
 
 DEFAULT = "default"
@@ -17,6 +12,9 @@ default_star_file = "$baseDir/bin/star_file.txt"
 // Parse input parameters
 params.help = false
 params.rerun = false
+params.sample_sheet = false
+params.output_dir = false
+params.run_dir = false
 params.star_file = DEFAULT
 params.level = 3
 params.bcl_max_mem = 40
@@ -59,6 +57,11 @@ include {
 include {
     demux_dash
 } from './module.dashboard'
+
+include {
+    run_recovery
+    sum_recovery
+} from './module.recovery'
 
 def validate(params) {
     if (!params.run_dir || !params.output_dir || !params.sample_sheet ) {
@@ -118,37 +121,28 @@ def validate(params) {
     exit 1
 }
 
-sample_sheet_file = file(params.sample_sheet)
-run_dir = Channel.fromPath(params.run_dir)
-run_parameters_file = file("${params.run_dir}/[Rr]unparameters.xml*")
-
-if (params.rt_barcode_file == DEFAULT) {
-    if (params.level == "2") {
-        rt_barcode_file = file(default_rt2_barcode_file)
-    }
-    if (params.level == "3") {
-        rt_barcode_file = file(default_rt3_barcode_file)
-    }
-} else {
-    rt_barcode_file = file(params.rt_barcode_file)
-}
-
-star_file = params.star_file == DEFAULT ? file(params.default_star_file) : file(params.star_file)
-lig_barcode_file = params.lig_barcode_file == DEFAULT ? file(default_lig_barcode_file) : file(params.lig_barcode_file)
-p5_barcode_file = params.p5_barcode_file == DEFAULT ? file(default_p5_barcode_file) : file(params.p5_barcode_file)
-p7_barcode_file = params.p7_barcode_file == DEFAULT ? file(default_p7_barcode_file) : file(params.p7_barcode_file)
-
-if (params.max_cores > 16) {
-    max_cores_bcl = 16
-    bcl_mem = params.bcl_max_mem/16
-} else {
-    max_cores_bcl = params.max_cores
-    bcl_mem = params.bcl_max_mem/max_cores_bcl
-
 workflow {
-    main:
-
     validate(params)
+
+    sample_sheet_file = file(params.sample_sheet)
+    run_dir = Channel.fromPath(params.run_dir)
+    run_parameters_file = file("${params.run_dir}/[Rr]unparameters.xml*")
+
+    if (params.rt_barcode_file == DEFAULT) {
+        if (params.level == "2") {
+            rt_barcode_file = file(default_rt2_barcode_file)
+        }
+        if (params.level == "3") {
+            rt_barcode_file = file(default_rt3_barcode_file)
+        }
+    } else {
+        rt_barcode_file = file(params.rt_barcode_file)
+    }
+
+    star_file = params.star_file == DEFAULT ? file(params.default_star_file) : file(params.star_file)
+    lig_barcode_file = params.lig_barcode_file == DEFAULT ? file(default_lig_barcode_file) : file(params.lig_barcode_file)
+    p5_barcode_file = params.p5_barcode_file == DEFAULT ? file(default_p5_barcode_file) : file(params.p5_barcode_file)
+    p7_barcode_file = params.p7_barcode_file == DEFAULT ? file(default_p7_barcode_file) : file(params.p7_barcode_file)
 
     if ( params.generate_samplesheets ) {
         bbi_universal_sheet_file = Channel.fromPath(params.generate_sample_sheets)
@@ -167,6 +161,14 @@ workflow {
         bcl_sample_sheet = make_sample_sheet.out.bcl_sample_sheet
     }
 
+    if (params.max_cores > 16) {
+        max_cores_bcl = 16
+        bcl_mem = params.bcl_max_mem/16
+    } else {
+        max_cores_bcl = params.max_cores
+        bcl_mem = params.bcl_max_mem/max_cores_bcl
+    }
+
     bcl2fastq( run_dir, bcl_sample_sheet, max_cores_bcl, bcl_mem )
 
     fastqs = bcl2fastq.out.fastqs
@@ -181,9 +183,9 @@ workflow {
             fastqs,
             run_parameters_file,
             sample_sheet_file,
-            rt_barcode_file
-            p5_barcode_file
-            p7_barcode_file
+            rt_barcode_file,
+            p5_barcode_file,
+            p7_barcode_file,
             lig_barcode_file
         )
 
@@ -202,9 +204,9 @@ workflow {
             fastq_chunks,
             run_parameters_file,
             sample_sheet_file,
-            rt_barcode_file
-            p5_barcode_file
-            p7_barcode_file
+            rt_barcode_file,
+            p5_barcode_file,
+            p7_barcode_file,
             lig_barcode_file
         )
 
@@ -252,58 +254,11 @@ workflow {
     demux_dash( csv_stats.collect(), json_stats.collect(), sample_sheet_file )
 
     if (params.run_recovery) {
+        // TODO
         // run_recovery
         // sum_recovery
     }
 
     println "bbi-dmux completed at: $workflow.complete"
     println "Execution status: ${ workflow.success ? 'OK' : 'failed' }"
-}
-
-
-
-fastqs.into { fastqs_path1; fastqs_path2 }
-
-
-/*
-** ================================================================================
-** End path 2 - Start recovery
-** ================================================================================
-*/
-
-
-
-/*************
-Groovy functions
-*************/
-
-/*
-** checkNextflowVersion
-**
-** Purpose: check Nextflow version information to minimum version values.
-**
-** Returns:
-**   exits when Nextflow version is unacceptable
-*/
-def checkNextflowVersion( Integer minMajorVersion, Integer minMinorVersion )
-{
-  def sVersion = nextflow.version.toString()
-  def aVersion = sVersion.split( /[.]/ )
-  def majorVersion = aVersion[0].toInteger()
-  def minorVersion = aVersion[1].toInteger()
-  if( majorVersion < minMajorVersion || ( majorVersion == minMajorVersion && minorVersion < minMinorVersion ) )
-  {
-    def serr = "This pipeline requires Nextflow version at least %s.%s: you have version %s."
-    println()
-    println( '****  ' + String.format( serr, minMajorVersion, minMinorVersion, sVersion ) + '  ****' )
-    println()
-    System.exit( -1 )
-    /*
-    ** An exception produces an exceptionally verbose block of confusing text. I leave
-    ** the command here in case the println() output is obscured by fancy Nextflow tables.
-    **
-    ** throw new Exception( String.format( serr, minMajorVersion, minMinorVersion, sVersion ) )
-    */
-  }
-  return( 0 )
 }

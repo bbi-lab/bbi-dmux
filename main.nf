@@ -234,10 +234,10 @@ process seg_sample_fastqs1 {
     
     when:
         !params.large
- 
+
     """
     mkdir demux_out
-    make_sample_fastqs.py --run_directory $params.run_dir \
+    pypy $baseDir/bin/make_sample_fastqs.py --run_directory $params.run_dir \
         --read1 <(zcat $R1) --read2 <(zcat $R2) \
         --file_name $R1 --sample_layout $sample_sheet_file1 \
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
@@ -250,7 +250,7 @@ process seg_sample_fastqs1 {
         --buffer_blocks $params.demux_buffer_blocks \
         --output_dir ./demux_out --level $params.level
     pigz -p 8 demux_out/*.fastq
-    """    
+   """    
 }
 
 
@@ -284,7 +284,7 @@ process demux_dash1 {
 ** ================================================================================
 */
 
-
+/*
 process seg_sample_fastqs2 {
     cache 'lenient'
 
@@ -495,7 +495,7 @@ process demux_dash {
 
 }
 
-
+*/
 /*
 ** ================================================================================
 ** End path 2 - Start recovery

@@ -13,7 +13,7 @@ import glob
 import xml.etree.ElementTree as ET
 import ast
 import run_info
-
+import gzip
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 P5_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/p5.txt')
 P7_FILE = os.path.join(SCRIPT_DIR, 'barcode_files/p7.txt')
@@ -349,22 +349,22 @@ if __name__ == '__main__':
     lane_num = lane_num.replace("Undetermined_S0_L", "L")
     lane_num = lane_num.replace("_R1_001.fastq.gz", "")
     stats_file = os.path.join(args.output_dir, lane_num + ".stats.json")
-    suffix = lane_num + ".fastq"
+    suffix = lane_num + ".fastq.gz"
 
-    if multi_exp:
+    if multi_exp: #, buffering=buffer_size
         sample_rt_exp_lookup = load_sample_layout(args.sample_layout, multi_exp)
         sample_to_output_filename_lookup = {sample: os.path.join(args.output_dir, '%s-%s' % (sample, suffix)) for well,sample in sample_rt_exp_lookup.items()}
-        sample_to_output_file_lookup = {sample: open(filename, 'w', buffering=buffer_size) for sample,filename in sample_to_output_filename_lookup.items()}
+        sample_to_output_file_lookup = {sample: open(filename, 'w') for sample,filename in sample_to_output_filename_lookup.items()}
         print("Demuxing %s samples (%s total RT wells) into their own files..." % (len(sample_to_output_filename_lookup), len(sample_rt_exp_lookup)))
 
      
     else:
         sample_rt_lookup = load_sample_layout(args.sample_layout, multi_exp)
         sample_to_output_filename_lookup = {sample: os.path.join(args.output_dir, '%s-%s' % (sample, suffix)) for well,sample in sample_rt_lookup.items()}
-        sample_to_output_file_lookup = {sample: open(filename, 'w', buffering=buffer_size) for sample,filename in sample_to_output_filename_lookup.items()}
+        sample_to_output_file_lookup = {sample: open(filename, 'w') for sample,filename in sample_to_output_filename_lookup.items()}
         print("Demuxing %s samples (%s total RT wells) into their own files..." % (len(sample_to_output_filename_lookup), len(sample_rt_lookup)))
 
-    undetermined = open(os.path.join(args.output_dir, '%s-%s' % ("Undetermined", suffix)), 'w', buffering=buffer_size)
+    undetermined = open(os.path.join(args.output_dir, '%s-%s' % ("Undetermined", suffix)), 'w')
      
     # Set up some basic tracking for each sample
     sample_read_counts = {}

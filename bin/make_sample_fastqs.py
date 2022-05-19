@@ -205,7 +205,7 @@ if __name__ == '__main__':
     if not p5_none:
         args.p5_cols_used = [int(x) for x in args.p5_cols_used]
 
-    if args.p5_cols_used != [0]:
+    if args.p5_cols_used != ['0']:
         programmed_pcr_combos = get_programmed_pcr_combos(p5_lookup, p7_lookup, args.p5_cols_used, args.p7_rows_used)
     else:
         programmed_pcr_combos = get_programmed_pcr_combos_wells(args.p5_wells_used, args.p7_wells_used)

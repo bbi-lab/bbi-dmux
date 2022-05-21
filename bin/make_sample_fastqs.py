@@ -132,10 +132,10 @@ if __name__ == '__main__':
     parser.add_argument('--read2', nargs='?', type=argparse.FileType('r'), default=sys.stdin, required=True, help='Text piped in from stdin for R2.')
     parser.add_argument('--file_name', required=True, help='The R1 file name.')
     parser.add_argument('--sample_layout', required=True, help='Text file containing the sample layout by RT well.')
-    parser.add_argument('--p5_cols_used', nargs='+', required=True, help='A list of the columns used from P5 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A B C for p7 and --p5 1 2 3 for p5.')
-    parser.add_argument('--p7_rows_used', nargs='+', required=True, help='A list of the rows used from P7 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A B C for p7 and --p5 1 2 3 for p5.')
-    parser.add_argument('--p5_wells_used', nargs='+', required=True, help='A list of the wells used from P5 plate for PCR in same order as P7 to indicate the pairs of P7 and P5 used (e.g. --p7 A1 B1 C1 for p7 and --p5 A1 A2 A3 for p5. Alternative to p5_cols_used.')
-    parser.add_argument('--p7_wells_used', nargs='+', required=True, help='A list of the wells used from P7 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A1 B1 C1 for p7 and --p5 A1 A2 A3 for p5. Alternative to p7_rows_used.')
+    parser.add_argument('--p5_cols_used', nargs='+', required=True, help='A list of the columns used from P5 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A B C for p7 and --p5 1 2 3 for p5. Set to "0" if not used.')
+    parser.add_argument('--p7_rows_used', nargs='+', required=True, help='A list of the rows used from P7 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A B C for p7 and --p5 1 2 3 for p5. Set to "0" if not used.')
+    parser.add_argument('--p5_wells_used', nargs='+', required=True, help='A list of the wells used from P5 plate for PCR in same order as P7 to indicate the pairs of P7 and P5 used (e.g. --p7 A1 B1 C1 for p7 and --p5 A1 A2 A3 for p5. Alternative to p5_cols_used. Set to "0" if not used.')
+    parser.add_argument('--p7_wells_used', nargs='+', required=True, help='A list of the wells used from P7 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A1 B1 C1 for p7 and --p5 A1 A2 A3 for p5. Alternative to p7_rows_used. Set to "0" if not used.')
     parser.add_argument('--output_dir', required=True, help='Output directory for files.')
     parser.add_argument('--p7_length', type=int, default=10, help='Expected P7 index length.')
     parser.add_argument('--p5_length', type=int, default=10, help='Expected P5 index length.')
@@ -156,6 +156,16 @@ if __name__ == '__main__':
         raise ValueError('Single-end reads detected: paired-end reads required')
 
     reverse_complement_i5 = run_info['reverse_complement_i5']
+
+    if(args.p7_rows_used != ['0'] and args.p5_cols_used != ['0']):
+        wells_used = False
+    elif( args.p7_rows_used == ['0'] and args.p5_cols_used == ['0']):
+        wells_used = True
+    else:
+        raise ValueError('Only one of args.p7_rows_used and args.p5_cols_used is set "0". Either both or neither must be set to "0".')
+
+    if(wells_used and (args.p7_wells_used == ['0'] or args.p5_wells_used == ['0'])):
+        raise ValueError('Only one of args.p7_wells_used and args.p5_wells_used is set "0". Either both or neither must be set to "0".')
 
     # Load and process PCR barcodes
     p7_lookup = bu.load_whitelist(P7_FILE)
@@ -205,7 +215,7 @@ if __name__ == '__main__':
     if not p5_none:
         args.p5_cols_used = [int(x) for x in args.p5_cols_used]
 
-    if args.p5_cols_used != ['0']:
+    if not wells_used:
         programmed_pcr_combos = get_programmed_pcr_combos(p5_lookup, p7_lookup, args.p5_cols_used, args.p7_rows_used)
     else:
         programmed_pcr_combos = get_programmed_pcr_combos_wells(args.p5_wells_used, args.p7_wells_used)

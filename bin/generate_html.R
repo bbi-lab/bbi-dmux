@@ -214,7 +214,7 @@ for (lane in lane_list) {
   }
   if (p7_rows[1] == "none" || p5_cols[1] == "none") {
     pcr_plate_list <- c()
-    rel_barc <- ifelse(p7_rows == "none", "p5", "p7")
+    rel_barc <- ifelse(p7_rows[1] == "none", "p5", "p7")
     if(p7_rows[1] == "none") {
       pcr_counts$rows <- substring(pcr_counts$V1, first = 1, last = 1)
       pcr_counts$cols <- as.numeric(substring(pcr_counts$V1, first = 2,
@@ -281,9 +281,16 @@ outtab <- lapply(lane_list, function(x) {
        "perc_pcr_mismatch"= round(sumstats$fraction_pcr_mismatch * 100, digits = 2)
   )
 })
+
 if(well_wise) {
-  well_df_out <- Reduce(function(df1, df2) merge(df1, df2, by = c("p5", "p7")),
-                        well_df_list)
+  well_df_out <- tryCatch(
+      error = function(condition) {
+        message("generate_html.R: unable to make pcr_well_info for the demux_dash:\n  ", condition, appendLF=FALSE)
+        message("This does not affect the analysis result.")
+        return(well_df_out=data.frame())
+      },
+      Reduce(function(df1, df2) merge(df1, df2, by = c("p5", "p7")), well_df_list)
+  )
 } else {
   well_df_out <- data.frame()
 }

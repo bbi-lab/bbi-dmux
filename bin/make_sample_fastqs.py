@@ -25,6 +25,7 @@ def get_programmed_pcr_combos(p5_lookup, p7_lookup, p5_cols_used, p7_rows_used):
     """
     Assuming p5 are columns and p7 are rows, get the set of (p5, p7) wells that were programmed.
     These are the set that would have been physically combined.
+    We use this functions for args.p5_cols_used and args.p7_rows_used.
     Args:
         p5_lookup (dict): p5_lookup dict mapping sequences to wells as passed to barcode specification
         p7_lookup (dict): p7_lookup dict mapping sequences to wells as passed to barcode specification
@@ -62,6 +63,7 @@ def get_programmed_pcr_combos_wells(p5_wells_used, p7_wells_used):
     """
     Assuming p5 and p7 are wells, get the set of (p5, p7) wells that were programmed.
     These are the set that would have been physically combined.
+    We use this functions for args.p5_wells_used and args.p7_wells_used.
     Args:
         p5_wells_used (list): A list of the wells used from P5 plate for PCR in same order as P7 to indicate the pairs of P7 and P5 used (e.g. A1 B1 C1 for p7 and C1 D2 E3 for p5.
         p7_wells_used: A list of the rows used from P7 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. A1 B1 C1 for p7 and C1 D2 E3 for p5.
@@ -132,10 +134,10 @@ if __name__ == '__main__':
     parser.add_argument('--read2', nargs='?', type=argparse.FileType('r'), default=sys.stdin, required=True, help='Text piped in from stdin for R2.')
     parser.add_argument('--file_name', required=True, help='The R1 file name.')
     parser.add_argument('--sample_layout', required=True, help='Text file containing the sample layout by RT well.')
-    parser.add_argument('--p5_cols_used', nargs='+', required=True, help='A list of the columns used from P5 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A B C for p7 and --p5 1 2 3 for p5.')
-    parser.add_argument('--p7_rows_used', nargs='+', required=True, help='A list of the rows used from P7 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A B C for p7 and --p5 1 2 3 for p5.')
-    parser.add_argument('--p5_wells_used', nargs='+', required=True, help='A list of the wells used from P5 plate for PCR in same order as P7 to indicate the pairs of P7 and P5 used (e.g. --p7 A1 B1 C1 for p7 and --p5 A1 A2 A3 for p5. Alternative to p5_cols_used.')
-    parser.add_argument('--p7_wells_used', nargs='+', required=True, help='A list of the wells used from P7 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A1 B1 C1 for p7 and --p5 A1 A2 A3 for p5. Alternative to p7_rows_used.')
+    parser.add_argument('--p5_cols_used', nargs='+', required=True, help='A list of the columns used from P5 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A B C for p7 and --p5 1 2 3 for p5. Set to "0" if not used.')
+    parser.add_argument('--p7_rows_used', nargs='+', required=True, help='A list of the rows used from P7 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A B C for p7 and --p5 1 2 3 for p5. Set to "0" if not used.')
+    parser.add_argument('--p5_wells_used', nargs='+', required=True, help='A list of the wells used from P5 plate for PCR in same order as P7 to indicate the pairs of P7 and P5 used (e.g. --p7 A1 B1 C1 for p7 and --p5 A1 A2 A3 for p5. Alternative to p5_cols_used. Set to "0" if not used.')
+    parser.add_argument('--p7_wells_used', nargs='+', required=True, help='A list of the wells used from P7 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A1 B1 C1 for p7 and --p5 A1 A2 A3 for p5. Alternative to p7_rows_used. Set to "0" if not used.')
     parser.add_argument('--output_dir', required=True, help='Output directory for files.')
     parser.add_argument('--p7_length', type=int, default=10, help='Expected P7 index length.')
     parser.add_argument('--p5_length', type=int, default=10, help='Expected P5 index length.')
@@ -149,15 +151,31 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
 
+    # Set write buffer size for writing to fastq files.
     buffer_size = int(args.buffer_blocks) * 8192
-    run_info = run_info.get_run_info( args.run_directory, pipeline_type='RNA-seq' )
 
+    # Read flowcell runParameters.xml file and infer whether or not the
+    # P5 index is reverse complemented.
+    run_info = run_info.get_run_info( args.run_directory, pipeline_type='RNA-seq' )
+    # We need paired end read.
     if( run_info['paired_end'] == False ):
         raise ValueError('Single-end reads detected: paired-end reads required')
-
     reverse_complement_i5 = run_info['reverse_complement_i5']
 
-    # Load and process PCR barcodes
+    # Check the p7 and p5 command line arguments for completeness
+    # and consistency. Determine whether or not the p5_wells_used
+    # and or the p7_wells_used are to be used for demultiplexing.
+    if(args.p7_rows_used != ['0'] and args.p5_cols_used != ['0']):
+        wells_used = False
+    elif( args.p7_rows_used == ['0'] and args.p5_cols_used == ['0']):
+        wells_used = True
+    else:
+        raise ValueError('Only one of args.p7_rows_used and args.p5_cols_used is set "0". Either both or neither must be set to "0".')
+
+    if(wells_used and (args.p7_wells_used == ['0'] or args.p5_wells_used == ['0'])):
+        raise ValueError('Only one of args.p7_wells_used and args.p5_wells_used is set "0". Either both or neither must be set to "0".')
+
+    # Load and set up PCR barcode data structures.
     p7_lookup = bu.load_whitelist(P7_FILE)
     p7_lookup = {sequence[0:args.p7_length]: well for sequence,well in p7_lookup.items()}
 
@@ -166,6 +184,8 @@ if __name__ == '__main__':
         p5_lookup = {bu.reverse_complement(sequence): well for sequence,well in p5_lookup.items()}
     p5_lookup = {sequence[0:args.p5_length]: well for sequence,well in p5_lookup.items()}
 
+    # If PCR indices, as well as RT barcodes, are used to identify
+    # samples, set up now.
     multi_exp = True if ( args.multi_exp != 0 ) else False
     if multi_exp:
         all_p7 = ""
@@ -192,25 +212,29 @@ if __name__ == '__main__':
             args.p7_wells_used = all_p7
             args.p5_wells_used = all_p5
 
+    # Are p5 indices used, or are they 'none'?
     if args.p5_cols_used == ["none"] or args.p5_wells_used == ["none"]:
         p5_none = True
     else:
         p5_none = False
 
+    # Are p7 indices used, or are they 'none'?
     if args.p7_rows_used == ["none"] or args.p7_wells_used == ["none"]:
         p7_none = True
     else:
         p7_none = False
 
+    # If p5 indices are used, convert to integers for columns.
     if not p5_none:
         args.p5_cols_used = [int(x) for x in args.p5_cols_used]
 
-    if args.p5_cols_used != [0]:
+    # Generate expected PCR P7 and P5 well combinations.
+    if not wells_used:
         programmed_pcr_combos = get_programmed_pcr_combos(p5_lookup, p7_lookup, args.p5_cols_used, args.p7_rows_used)
     else:
         programmed_pcr_combos = get_programmed_pcr_combos_wells(args.p5_wells_used, args.p7_wells_used)
 
-    # Load and process RT barcodes
+    # Prepare to load RT barcode files.
     if args.rt_barcode_file == "default":
         if args.level == "3":
             rtfile = RT3_FILE
@@ -219,6 +243,7 @@ if __name__ == '__main__':
     else:
         rtfile = args.rt_barcode_file
 
+    # Prepare to load PCR primer sequence files.
     if args.p5_barcode_file == "default":
         p5file = P5_FILE
     else:
@@ -240,13 +265,13 @@ if __name__ == '__main__':
     stats_file = os.path.join(args.output_dir, lane_num + ".stats.json")
     suffix = lane_num + ".fastq"
 
-    # Load and process ligation barcodes
+    # Load and process ligation barcodes.
     if args.level == "3":
         ligation_lookup = bu.load_whitelist(ligfile, variable_lengths=True)
         ligation_9_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 9}
         ligation_10_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 10}
 
-    # Load barcodes
+    # Load PCR barcodes.
     p7_lookup = bu.load_whitelist(p7file)
     p7_lookup = {sequence[0:args.p7_length]: well for sequence,well in p7_lookup.items()}
 
@@ -344,7 +369,7 @@ if __name__ == '__main__':
         }
     barcode_spec.update(pcr_spec)
     
-    # Prep output files
+    # Prepare output files.
     lane_num = args.file_name
     lane_num = lane_num.replace("Undetermined_S0_L", "L")
     lane_num = lane_num.replace("_R1_001.fastq.gz", "")
@@ -372,6 +397,7 @@ if __name__ == '__main__':
         sample_read_counts[sample] = 0
 
     if args.level == "3":
+        # Demultiplex 3-level fastq files.
         total_reads = 0
         total_uncorrected = 0
         total_pcr_mismatch = 0
@@ -381,7 +407,8 @@ if __name__ == '__main__':
         total_corrected_10 = 0
         read_pair_dict = {}
         rt_dict = {}
-        lig_dict = {}        
+        lig_dict = {}
+
         # Finally, process reads
         for read_number, entry in enumerate(bu.parse_fastq_barcodes(args.read1, args.read2, spec=barcode_spec, edit_distance=1)):
 
@@ -391,6 +418,7 @@ if __name__ == '__main__':
                 p5 = entry['p5']
             else:
                 p5 = "none"
+
             if not p7_none:
                 p7 = entry['p7']
             else:
@@ -427,20 +455,19 @@ if __name__ == '__main__':
                 write_to_undetermined(entry)
                 continue
 
-            if multi_exp:
+            if not multi_exp:
+                if rt_barcode not in sample_rt_lookup:
+                    total_unused_rt_well += 1
+                    write_to_undetermined(entry)
+                    continue
+                sample = sample_rt_lookup[rt_barcode]
+            else:
                 experiment = exp_lookup[(p5, p7)]
                 if (rt_barcode, experiment) not in sample_rt_exp_lookup:
                     total_unused_rt_well += 1
                     write_to_undetermined(entry)
                     continue
                 sample = sample_rt_exp_lookup[(rt_barcode, experiment)]
-
-            else:
-                if rt_barcode not in sample_rt_lookup:
-                    total_unused_rt_well += 1
-                    write_to_undetermined(entry)
-                    continue
-                sample = sample_rt_lookup[rt_barcode]
 
             sample_read_number = sample_read_counts[sample] + 1
             sample_read_counts[sample] += 1
@@ -460,11 +487,19 @@ if __name__ == '__main__':
             else:
                 rt_dict[rt_barcode] = 1
 
-            r2_qual = entry['r2_qual']
-            r2_seq = entry['r2_seq']
-            output_name = f'@{sample}-P5{p5}-P7{p7}_{sample_read_number}|{sample}|{p5}|{p7}|{rt_barcode}_{ligation_barcode}|{umi}'
-            output_line = f'{output_name}\n{r2_seq}\n+\n{r2_qual}\n'
-            sample_to_output_file_lookup[sample].write(output_line)
+            # Write read entry to output file.
+            sample_to_output_file_lookup[sample].write(\
+f'@{sample}-P5{p5}-P7{p7}_{sample_read_number}|{sample}|{p5}|{p7}|{rt_barcode}_{ligation_barcode}|{umi}\n\
+{entry["r2_seq"]}\n\
++\n\
+{entry["r2_qual"]}\n')
+
+#             r2_qual = entry['r2_qual']
+#             r2_seq = entry['r2_seq']
+#             output_name = f'@{sample}-P5{p5}-P7{p7}_{sample_read_number}|{sample}|{p5}|{p7}|{rt_barcode}_{ligation_barcode}|{umi}'
+#             output_line = f'{output_name}\n{r2_seq}\n+\n{r2_qual}\n'
+#             sample_to_output_file_lookup[sample].write(output_line)
+
 
         # Close output files
         for f in sample_to_output_file_lookup.values():
@@ -492,6 +527,7 @@ if __name__ == '__main__':
                     f.write(lig + "," + str(val) + "\n")
 
     else:
+        # Demultiplex 2-level fastq files.
         total_reads = 0
         total_uncorrected = 0
         total_pcr_mismatch = 0
@@ -499,6 +535,7 @@ if __name__ == '__main__':
         total_corrected = 0
         read_pair_dict = {}
         rt_dict = {}
+
         # Finally, process reads
         for read_number, entry in enumerate(bu.parse_fastq_barcodes(args.read1, args.read2, spec=barcode_spec, edit_distance=1)):
 
@@ -585,6 +622,7 @@ if __name__ == '__main__':
         stats['total_reads_passed_per_sample'] = sample_read_counts
  
     dict_file = os.path.join(args.output_dir, lane_num + ".pcr_counts.csv")
+
     # Output read_pair_dict
     with open(dict_file, 'w') as f:
         for (p5, p7),val in read_pair_dict.items():
@@ -592,6 +630,7 @@ if __name__ == '__main__':
                 f.write(p5 + "," + p7 + "," + str(val) + "\n")
     
     rt_dict_file = os.path.join(args.output_dir, lane_num + ".rt_counts.csv")
+
     # Output rt_dict
     with open(rt_dict_file, 'w') as f:
         for rt,val in rt_dict.items():

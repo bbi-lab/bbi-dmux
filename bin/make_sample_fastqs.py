@@ -2,7 +2,7 @@
 # Make sample fastqs 2-level
 # Andrew's barcode parser/fastq combiner modified for 2-level
 
-import barcodeutils as bu
+import barcodeutils_bbi as bu
 import argparse
 import os
 import json
@@ -156,6 +156,8 @@ if __name__ == '__main__':
     # We need paired end read.
     if( run_info['paired_end'] == False ):
         raise ValueError('Single-end reads detected: paired-end reads required')
+
+    # Reverse complement P5 sequences?
     reverse_complement_i5 = run_info['reverse_complement_i5']
 
     # Check the p7 and p5 command line arguments for completeness
@@ -490,13 +492,6 @@ f'@{sample}-P5{p5}-P7{p7}_{sample_read_number}|{sample}|{p5}|{p7}|{rt_barcode}_{
 +\n\
 {entry["r2_qual"]}\n')
 
-#             r2_qual = entry['r2_qual']
-#             r2_seq = entry['r2_seq']
-#             output_name = f'@{sample}-P5{p5}-P7{p7}_{sample_read_number}|{sample}|{p5}|{p7}|{rt_barcode}_{ligation_barcode}|{umi}'
-#             output_line = f'{output_name}\n{r2_seq}\n+\n{r2_qual}\n'
-#             sample_to_output_file_lookup[sample].write(output_line)
-
-
         # Close output files
         for f in sample_to_output_file_lookup.values():
             f.close()
@@ -599,13 +594,6 @@ f'@{sample_read_name}-P5{p5}-P7{p7}_{sample_read_number}|{sample_read_name}|{p5}
 {entry["r2_seq"]}\n\
 +\n\
 {entry["r2_qual"]}\n')
-
-
-##            r2_qual = entry['r2_qual']
-##            r2_seq = entry['r2_seq']
-##            output_name = f'@{sample_read_name}-P5{p5}-P7{p7}_{sample_read_number}|{sample_read_name}|{p5}|{p7}|{rt_barcode}|{umi}'
-##            output_line = f'{output_name}\n{r2_seq}\n+\n{r2_qual}\n'
-##            sample_to_output_file_lookup[sample].write(output_line)
 
         # Close output files
         for f in sample_to_output_file_lookup.values():

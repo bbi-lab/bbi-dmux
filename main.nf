@@ -7,6 +7,15 @@ checkNextflowVersion( minMajorVersion, minMinorVersion )
 
 
 /*
+** Where to find scripts.
+** Note: script_dir needs to be visible within Groovy functions
+**       so there is no 'def', which makes it global.
+*/
+pipeline_path="$workflow.projectDir"
+script_dir="${pipeline_path}/bin"
+
+
+/*
 ** Check OS version.
 ** Notes:
 **   o  works only for Linux systems
@@ -27,11 +36,9 @@ params.rt_barcode_file="default"
 params.p5_barcode_file="default"
 params.p7_barcode_file="default"
 params.lig_barcode_file="default"
-params.large = false
 params.generate_samplesheets = 'no_input'
 params.max_cores = 16
 params.max_wells_per_sample = 20
-params.demux_buffer_blocks = 16
 
 params.multi_exp = 0
 params.p5_cols = 0
@@ -79,9 +86,7 @@ if (params.help) {
     log.info '    params.star_file = PATH/TO/FILE            File with the genome to star maps, similar to the one included with the package.'
     log.info '    params.fastq_chunk_size = 100000000        The number of reads that should be processed together for demultiplexing.'
     log.info '    params.bcl_max_mem = 40                    The maximum number of GB of RAM to assign for bcl2fastq'
-    log.info '    params.large = false                       Is this a very large run? If true, the fastqs will be split - note that for smaller runs this will make the pipeline run more slowly.'
     log.info '    params.max_wells_per_sample = 20           The maximum number of wells per sample - if a sample is in more wells, the fastqs will be split then reassembled.'
-    log.info '    params.demux_buffer_blocks = 16            The number of 8K blocks to use for demux output buffer.'
     log.info '    --run_recovery true                        Add this to run the recovery script AFTER running the normal pipeline.'
     log.info '    --generate_samplesheets input_csv          Add this to generate the necessary samplesheet from the BBI universal input sheet.'    
     log.info ''
@@ -207,7 +212,8 @@ process bcl2fastq {
     """
 }
 
-fastqs.into { fastqs_path1; fastqs_path2 }
+// fastqs.into { fastqs_path1; fastqs_path2 }
+// fastqs.into { fastqs_path1 }
 
 /*
 ** ================================================================================
@@ -223,7 +229,8 @@ process seg_sample_fastqs1 {
     publishDir  path: "${params.output_dir}/demux_out/", pattern: "*.json", mode: 'copy'
 
     input:
-        set file(R1), file(R2) from fastqs_path1
+//        set file(R1), file(R2) from fastqs_path1
+        set file(R1), file(R2) from fastqs
         file sample_sheet_file1
 
     output:
@@ -232,12 +239,12 @@ process seg_sample_fastqs1 {
         file "demux_out/*.stats.json" into json_stats1 mode flatten
         file "demux_out/*.csv" into csv_stats1
     
-    when:
-        !params.large
- 
     """
     mkdir demux_out
-    make_sample_fastqs.py --run_directory $params.run_dir \
+
+    source $script_dir/pypy_rnaseq_env/bin/activate
+
+    pypy3 ${script_dir}/make_sample_fastqs.py --run_directory $params.run_dir \
         --read1 <(zcat $R1) --read2 <(zcat $R2) \
         --file_name $R1 --sample_layout $sample_sheet_file1 \
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
@@ -247,8 +254,10 @@ process seg_sample_fastqs1 {
         --p7_barcode_file $params.p7_barcode_file \
         --lig_barcode_file $params.lig_barcode_file \
         --multi_exp "$params.multi_exp" \
-        --buffer_blocks $params.demux_buffer_blocks \
         --output_dir ./demux_out --level $params.level
+
+    deactivate
+
     pigz -p 8 demux_out/*.fastq
     """    
 }
@@ -284,7 +293,9 @@ process demux_dash1 {
 ** ================================================================================
 */
 
-
+/*
+** for split fastqs
+**
 process seg_sample_fastqs2 {
     cache 'lenient'
 
@@ -303,7 +314,9 @@ process seg_sample_fastqs2 {
 
     """
     mkdir demux_out
-    make_sample_fastqs.py --run_directory $params.run_dir \
+    source $script_dir/pypy_rnaseq_env/bin/activate
+
+    pypy3 make_sample_fastqs.py --run_directory $params.run_dir \
         --read1 $R1 --read2 $R2 \
         --file_name $R1 --sample_layout $sample_sheet_file3 \
         --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
@@ -313,12 +326,19 @@ process seg_sample_fastqs2 {
         --p7_barcode_file $params.p7_barcode_file \
         --lig_barcode_file $params.lig_barcode_file \
         --multi_exp "$params.multi_exp" \
-        --buffer_blocks $params.demux_buffer_blocks \
         --output_dir ./demux_out --level $params.level
+
+    deactivate
+
     pigz -p 8 demux_out/*.fastq    
     """    
 }
+**
+*/
 
+/*
+** for split fastqs?
+**
 get_prefix = { fname ->
     (fname - ~/_R1_001\.[0-9]+\.fastq.fastq.gz/)
 }
@@ -342,7 +362,13 @@ process recombine_fastqs {
     cat $all_fqs > ${prefix}.fastq.gz 
     """
 }
+**
+*/
 
+
+/*
+** for split fastqs?
+**
 csv_prefix = { fname ->
     (fname - ~/_R1_001\.[0-9]+\.fastq\.[a-z]+_[a-z]+\.csv/)
 }
@@ -373,7 +399,13 @@ process recombine_csvs {
 
     """
 }
+**
+*/
 
+
+/*
+** for split fastqs?
+**
 json_prefix = { fname ->
     (fname - ~/_R1_001\.[0-9]+\.fastq\.stats\.json/)
 }
@@ -471,7 +503,13 @@ with open("${prefix}.stats.json", 'w') as f:
     f.write(json.dumps(stats, indent=4))
     """
 }
+**
+*/
 
+
+/*
+** split fastqs?
+**
 out_dir_str = params.output_dir.replaceAll("/\\z", "");
 project_name = out_dir_str.substring(out_dir_str.lastIndexOf("/")+1);
 
@@ -494,6 +532,7 @@ process demux_dash {
     """
 
 }
+*/
 
 
 /*

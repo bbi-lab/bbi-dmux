@@ -1,3 +1,7 @@
+#
+# Version: 20220609a
+#
+
 import sys
 import itertools
 import gzip
@@ -539,13 +543,13 @@ def _validate_barcode_read_pair(read_seq, bc_end):
 
 
 def generate_well_ids(nrow, ncol):
-    well_ids = []
+    well_id_list = []
     nrow = 8
     ncol = 12
     for irow in range(nrow):
         for icol in range(ncol):
-            well_ids.append(string.ascii_uppercase[irow] + '%02d' % (icol+1))
-    return(well_ids)
+            well_id_list.append(string.ascii_uppercase[irow] + '%02d' % (icol+1))
+    return(well_id_list)
 
 
 def parse_fastq_barcodes(r1, r2=None, spec=None, reverse_i5=False, edit_distance=2):

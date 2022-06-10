@@ -212,16 +212,8 @@ process bcl2fastq {
     """
 }
 
-// fastqs.into { fastqs_path1; fastqs_path2 }
-// fastqs.into { fastqs_path1 }
 
-/*
-** ================================================================================
-** PATH 1 - For small datasets, no fastq splitting
-** ================================================================================
-*/
-
-process seg_sample_fastqs1 {
+process seg_sample_fastqs {
     cache 'lenient'
 
     publishDir path: "${params.output_dir}/", pattern: "demux_out/*fastq.gz", mode: 'link'     
@@ -229,15 +221,14 @@ process seg_sample_fastqs1 {
     publishDir  path: "${params.output_dir}/demux_out/", pattern: "*.json", mode: 'copy'
 
     input:
-//        set file(R1), file(R2) from fastqs_path1
         set file(R1), file(R2) from fastqs
         file sample_sheet_file1
 
     output:
-        file "demux_out/*" into seg_output1
-        file "demux_out/*.fastq.gz" into samp_fastqs_check1
-        file "demux_out/*.stats.json" into json_stats1 mode flatten
-        file "demux_out/*.csv" into csv_stats1
+        file "demux_out/*" into seg_output
+        file "demux_out/*.fastq.gz" into samp_fastqs_check
+        file "demux_out/*.stats.json" into json_stats mode flatten
+        file "demux_out/*.csv" into csv_stats
     
     """
     mkdir demux_out
@@ -266,15 +257,15 @@ process seg_sample_fastqs1 {
 out_dir_str = params.output_dir.replaceAll("/\\z", "");
 project_name = out_dir_str.substring(out_dir_str.lastIndexOf("/")+1);
 
-process demux_dash1 {
+process demux_dash {
     publishDir path: "${params.output_dir}/", pattern: "demux_dash", mode: 'copy'
 
     input:
-        file demux_stats_csvs from csv_stats1.collect()
-        file jsons from json_stats1.collect()
+        file demux_stats_csvs from csv_stats.collect()
+        file jsons from json_stats.collect()
         file sample_sheet_file2
     output:
-        file "demux_dash" into demux_dash1
+        file "demux_dash" into demux_dash
 
     """
     mkdir demux_dash
@@ -285,261 +276,6 @@ process demux_dash1 {
     """
 
 }
-
-
-/*
-** ================================================================================
-** PATH 2 - For large datasets, with fastq splitting
-** ================================================================================
-*/
-
-/*
-** for split fastqs
-**
-process seg_sample_fastqs2 {
-    cache 'lenient'
-
-    input:
-        set file(R1), file(R2) from fastqs_path2.splitFastq(by: params.fastq_chunk_size, file: true, pe: true)
-        file sample_sheet_file3
-
-    output:
-        file "demux_out/*" into seg_output
-        file "demux_out/*.fastq.gz" into samp_fastqs_check mode flatten
-        file "demux_out/*.stats.json" into json_stats mode flatten
-        file "demux_out/*.csv" into csv_stats mode flatten
-
-    when:
-        params.large
-
-    """
-    mkdir demux_out
-    source $script_dir/pypy_rnaseq_env/bin/activate
-
-    pypy3 make_sample_fastqs.py --run_directory $params.run_dir \
-        --read1 $R1 --read2 $R2 \
-        --file_name $R1 --sample_layout $sample_sheet_file3 \
-        --p5_cols_used $params.p5_cols --p7_rows_used $params.p7_rows \
-        --p5_wells_used $params.p5_wells --p7_wells_used $params.p7_wells \
-        --rt_barcode_file $params.rt_barcode_file \
-        --p5_barcode_file $params.p5_barcode_file \
-        --p7_barcode_file $params.p7_barcode_file \
-        --lig_barcode_file $params.lig_barcode_file \
-        --multi_exp "$params.multi_exp" \
-        --output_dir ./demux_out --level $params.level
-
-    deactivate
-
-    pigz -p 8 demux_out/*.fastq    
-    """    
-}
-**
-*/
-
-/*
-** for split fastqs?
-**
-get_prefix = { fname ->
-    (fname - ~/_R1_001\.[0-9]+\.fastq.fastq.gz/)
-}
-
-samp_fastqs_check
-    .map { file -> tuple(get_prefix(file.name), file) }
-    .groupTuple()
-    .set { grouped_files }
-
-process recombine_fastqs {
-    cache 'lenient'
-    publishDir  path: "${params.output_dir}/demux_out", pattern: "*.fastq.gz", mode: 'move'
-
-    input:
-        set prefix, file(all_fqs) from grouped_files 
-
-    output:
-        file "*.gz" into gz_fqs 
-
-    """
-    cat $all_fqs > ${prefix}.fastq.gz 
-    """
-}
-**
-*/
-
-
-/*
-** for split fastqs?
-**
-csv_prefix = { fname ->
-    (fname - ~/_R1_001\.[0-9]+\.fastq\.[a-z]+_[a-z]+\.csv/)
-}
-
-csv_stats
-    .map { file -> tuple(csv_prefix(file.name), file) }
-    .groupTuple()
-    .set { grouped_csvs }
-
-process recombine_csvs {
-    cache 'lenient'
-    publishDir  path: "${params.output_dir}/demux_out/", pattern: "*.csv", mode: 'copy'
-
-    input:
-        set prefix, file(all_csvs) from grouped_csvs
-
-    output:
-        file "*.csv" into all_csv
-
-    """
-    csvs="$all_csvs"    
-    arr=(\$csvs)
-    if [ "$params.level" = "3" ]; then
-        cat \$(IFS=\$'\n'; echo "\${arr[*]}" | grep lig_counts) | awk -F ',' 'BEGIN {OFS = ","} {a[\$1] += \$2} END {for (i in a) print i, a[i]}' > ${prefix}.lig_counts.csv    
-    fi
-    cat \$(IFS=\$'\n'; echo "\${arr[*]}" | grep rt_counts) | awk -F ',' 'BEGIN {OFS = ","} {a[\$1] += \$2} END {for (i in a) print i, a[i]}' > ${prefix}.rt_counts.csv
-    cat \$(IFS=\$'\n'; echo "\${arr[*]}" | grep pcr_counts) | awk -F ',' 'BEGIN {OFS = ","; SUBSEP = OFS = FS} {a[\$1,\$2] += \$3} END {for (i in a) print i, a[i]}' > ${prefix}.pcr_counts.csv
-
-    """
-}
-**
-*/
-
-
-/*
-** for split fastqs?
-**
-json_prefix = { fname ->
-    (fname - ~/_R1_001\.[0-9]+\.fastq\.stats\.json/)
-}
-
-json_stats
-    .map { file -> tuple(json_prefix(file.name), file) }
-    .groupTuple()
-    .set { grouped_jsons }
-
-process recombine_jsons {
-    cache 'lenient'
-    publishDir  path: "${params.output_dir}/demux_out/", pattern: "*.json", mode: 'copy'
-
-    input:
-        set prefix, file(all_jsons) from grouped_jsons
-
-    output:
-        file "*.json" into all_json
-
-    """
-#!/usr/bin/env python
-import json
-import glob
-import os
-from collections import OrderedDict
-
-if $params.level == 3:
-    total_input_reads = 0
-    total_passed_reads = 0
-    total_uncorrected = 0
-    total_ambiguous_ligation_length = 0
-    total_unused_rt_well = 0
-    total_pcr_mismatch = 0
-    total_corrected_9 = 0
-    total_corrected_10 = 0
-    sample_read_counts = {}
-
-    for file_name in glob.glob("*.json"):
-        with open (file_name, "r") as read_file:
-            data = json.load(read_file)
-        total_input_reads += data['total_input_reads']
-        total_passed_reads += data['total_passed_reads']
-        total_uncorrected += (data['fraction_uncorrected_reads'] * data['total_input_reads'])
-        total_ambiguous_ligation_length += (data['fraction_ambiguous_ligation_length'] * data['total_input_reads'])
-        total_unused_rt_well += (data['fraction_invalid_rt_well'] * data['total_input_reads'])
-        total_pcr_mismatch += (data['fraction_pcr_mismatch'] * data['total_input_reads'])
-        total_corrected_9 += data['total_reads_corrected_when_9bp_ligation'] 
-        total_corrected_10 += data['total_reads_corrected_when_10bp_ligation']
-        sample_read_counts = { k: sample_read_counts.get(k, 0) + data['total_reads_passed_per_sample'].get(k, 0) for k in set(sample_read_counts) | set(data['total_reads_passed_per_sample']) }
-
-    stats = OrderedDict()
-    stats['total_input_reads'] = total_input_reads
-    stats['total_passed_reads'] = total_passed_reads
-    stats['fraction_passed_reads'] = total_passed_reads / total_input_reads
-    stats['fraction_uncorrected_reads'] = total_uncorrected / total_input_reads
-    stats['fraction_ambiguous_ligation_length'] = total_ambiguous_ligation_length / total_input_reads
-    stats['fraction_invalid_rt_well'] = total_unused_rt_well / total_input_reads
-    stats['fraction_pcr_mismatch'] = total_pcr_mismatch / total_input_reads
-    stats['total_reads_corrected_when_9bp_ligation'] = total_corrected_9
-    stats['total_reads_corrected_when_10bp_ligation'] = total_corrected_10
-    stats['total_reads_passed_per_sample'] = sample_read_counts
-
-if $params.level == 2:
-    total_input_reads = 0
-    total_passed_reads = 0
-    total_uncorrected = 0
-    total_ambiguous_ligation_length = 0
-    total_unused_rt_well = 0
-    total_pcr_mismatch = 0
-    total_corrected = 0
-    sample_read_counts = {}
-
-    for file_name in glob.glob("*.json"):
-        with open (file_name, "r") as read_file:
-            data = json.load(read_file)
-        total_input_reads += data['total_input_reads']
-        total_passed_reads += data['total_passed_reads']
-        total_uncorrected += (data['fraction_uncorrected_reads'] * data['total_input_reads'])
-        total_unused_rt_well += (data['fraction_invalid_rt_well'] * data['total_input_reads'])
-        total_pcr_mismatch += (data['fraction_pcr_mismatch'] * data['total_input_reads'])
-        total_corrected += data['total_reads_corrected'] 
-        sample_read_counts = { k: sample_read_counts.get(k, 0) + data['total_reads_passed_per_sample'].get(k, 0) for k in set(sample_read_counts) | set(data['total_reads_passed_per_sample']) }
-
-    stats = OrderedDict()
-    stats['total_input_reads'] = total_input_reads
-    stats['total_passed_reads'] = total_passed_reads
-    stats['fraction_passed_reads'] = total_passed_reads / total_input_reads
-    stats['fraction_uncorrected_reads'] = total_uncorrected / total_input_reads
-    stats['fraction_invalid_rt_well'] = total_unused_rt_well / total_input_reads
-    stats['fraction_pcr_mismatch'] = total_pcr_mismatch / total_input_reads
-    stats['total_reads_corrected'] = total_corrected
-    stats['total_reads_passed_per_sample'] = sample_read_counts
-
-with open("${prefix}.stats.json", 'w') as f:
-    f.write(json.dumps(stats, indent=4))
-    """
-}
-**
-*/
-
-
-/*
-** split fastqs?
-**
-out_dir_str = params.output_dir.replaceAll("/\\z", "");
-project_name = out_dir_str.substring(out_dir_str.lastIndexOf("/")+1);
-
-process demux_dash {
-    publishDir path: "${params.output_dir}/", pattern: "demux_dash", mode: 'copy'
-
-    input:
-        file demux_stats_csvs from all_csv.collect()
-        file jsons from all_json.collect()
-        file sample_sheet_file4
-    output:
-        file demux_dash
-
-    """
-    mkdir demux_dash
-    cp -R $baseDir/bin/skeleton_dash/* demux_dash/
-    generate_html.R \
-        "." --p7_rows "$params.p7_rows" --p5_cols "$params.p5_cols" --p7_wells "$params.p7_wells" --p5_wells "$params.p5_wells" --level "$params.level" --project_name "${project_name}" --sample_sheet "$sample_sheet_file4"
-
-    """
-
-}
-*/
-
-
-/*
-** ================================================================================
-** End path 2 - Start recovery
-** ================================================================================
-*/
 
 
 save_recovery2 = {params.output_dir + "/recovery_output/" +  it - ~/.fastq.gz-summary.txt/ + "-recovery_summary.txt"}

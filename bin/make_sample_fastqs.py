@@ -138,6 +138,7 @@ if __name__ == '__main__':
     parser.add_argument('--p7_rows_used', nargs='+', required=True, help='A list of the rows used from P7 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A B C for p7 and --p5 1 2 3 for p5. Set to "0" if not used.')
     parser.add_argument('--p5_wells_used', nargs='+', required=True, help='A list of the wells used from P5 plate for PCR in same order as P7 to indicate the pairs of P7 and P5 used (e.g. --p7 A1 B1 C1 for p7 and --p5 A1 A2 A3 for p5. Alternative to p5_cols_used. Set to "0" if not used.')
     parser.add_argument('--p7_wells_used', nargs='+', required=True, help='A list of the wells used from P7 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A1 B1 C1 for p7 and --p5 A1 A2 A3 for p5. Alternative to p7_rows_used. Set to "0" if not used.')
+    parser.add_argument('--pcr_index_file', required=False, default='0', help='File of PCR index sequence pairs. Set to "0" if not used.')
     parser.add_argument('--output_dir', required=True, help='Output directory for files.')
     parser.add_argument('--p7_length', type=int, default=10, help='Expected P7 index length.')
     parser.add_argument('--p5_length', type=int, default=10, help='Expected P5 index length.')
@@ -173,14 +174,12 @@ if __name__ == '__main__':
     if(wells_used and (args.p7_wells_used == ['0'] or args.p5_wells_used == ['0'])):
         raise ValueError('Only one of args.p7_wells_used and args.p5_wells_used is set "0". Either both or neither must be set to "0".')
 
-    # Load and set up PCR barcode data structures.
-    p7_lookup = bu.load_whitelist(P7_FILE)
-    p7_lookup = {sequence[0:args.p7_length]: well for sequence,well in p7_lookup.items()}
-
-    p5_lookup = bu.load_whitelist(P5_FILE)
-    if reverse_complement_i5:
-        p5_lookup = {bu.reverse_complement(sequence): well for sequence,well in p5_lookup.items()}
-    p5_lookup = {sequence[0:args.p5_length]: well for sequence,well in p5_lookup.items()}
+    # Make a set of well ids for a 96-well plate. The well ids are used
+    # to make expected PCR well combinations from the command line
+    # arguments.
+    well_id_list = bu.generate_well_ids(nrow=8, ncol=12)
+    p5_lookup = {well_id: well_id for well_id in well_id_list}
+    p7_lookup = p5_lookup
 
     # If PCR indices, as well as RT barcodes, are used to identify
     # samples, set up now.
@@ -407,6 +406,11 @@ if __name__ == '__main__':
         rt_dict = {}
         lig_dict = {}
 
+        rt_9        = 0
+        rt_10       = 0
+        ligation_9  = 0
+        ligation_10 = 0
+
         # Finally, process reads
         for read_number, entry in enumerate(bu.parse_fastq_barcodes(args.read1, args.read2, spec=barcode_spec, edit_distance=1)):
 
@@ -421,10 +425,15 @@ if __name__ == '__main__':
                 p7 = entry['p7']
             else:
                 p7 = "none"
+
+            rt_9        = entry['rt_9']
+            rt_10       = entry['rt_10']
+            ligation_9  = entry['ligation_9']
+            ligation_10 = entry['ligation_10']
     
             ## Choose between the _8 and _9 options based on which correct properly
-            corrected_9 = entry['ligation_9'] is not None and entry['rt_9'] is not None
-            corrected_10 = entry['ligation_10'] is not None and entry['rt_10'] is not None
+            corrected_9 = ligation_9 is not None and rt_9 is not None
+            corrected_10 = ligation_10 is not None and rt_10 is not None
             corrected_p5_p7 = (p5_none or p5 is not None) and (p7_none or p7 is not None)
 
             if corrected_9 and corrected_10:
@@ -434,13 +443,13 @@ if __name__ == '__main__':
 
             if corrected_9 and corrected_p5_p7:
                 total_corrected_9 += 1
-                ligation_barcode = entry['ligation_9']
-                rt_barcode = entry['rt_9']
+                ligation_barcode = ligation_9
+                rt_barcode = rt_9
                 umi = entry['umi_9']
             elif corrected_10 and corrected_p5_p7:
                 total_corrected_10 += 1
-                ligation_barcode = entry['ligation_10']
-                rt_barcode = entry['rt_10']
+                ligation_barcode = ligation_10
+                rt_barcode = rt_10
                 umi = entry['umi_10']
             else:
                 total_uncorrected += 1

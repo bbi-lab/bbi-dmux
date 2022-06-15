@@ -1,8 +1,24 @@
 #!/usr/bin/env python3
 
+
+# Version: 20220615a
+
+
 import sys
 import re
 import csv
+import string
+
+
+if sys.version_info[0] >= 3:
+    revcomp = str.maketrans('ACGTacgtRYMKrymkVBHDvbhd', 'TGCAtgcaYRKMyrkmBVDHbvdh')
+else:
+    from itertools import izip as zip
+    revcomp = string.maketrans('ACGTacgtRYMKrymkVBHDvbhd', 'TGCAtgcaYRKMyrkmBVDHbvdh')
+
+
+def reverse_complement_sequence(seq):
+    return seq.translate(revcomp)[::-1]
 
 
 def check_pcr_rxn_header(row_one_list):
@@ -43,50 +59,174 @@ def check_pcr_rxn_row(file_path, i_row, row_length, row_list):
         test result (boolean): True if the row passes, False if it fails.
     """
     if(len(row_list) != row_length):
-        print('Unexpected field count in row %d of PCR reaction file %s' % (i_row, file_path), file=sys.stderr)
+        print('Error: unexpected field count in row %d of PCR reaction file "%s".' % (i_row, file_path), file=sys.stderr)
         return(False)
 
+    # Check for expected and consistent column counts.
     if(row_length == 3):
-        mobj = re.match('^[a-zA-Z0-9_:]+$', row_list[0])
+        # Check for valid characters in reaction names (first column).
+        mobj = re.match('^[-a-zA-Z0-9_]+$', row_list[0])
         if(mobj == None):
-             print('Bad reaction name in row %d of PCR reaction file %s' % (i_row, file_path), file=sys.stderr)
+             print('Error: bad reaction name in row %d of PCR reaction file "%s".' % (i_row, file_path), file=sys.stderr)
              return(False)
-        mobj = re.match('^[acgtACGT]+$', row_list[1])
+        # Check for valid bases in P5 index sequences.
+        mobj = re.match('^([acgtACGT]+|none)$', row_list[1])
         if(mobj == None):
-             print('Bad P5 index in row %d of PCR reaction file %s' % (i_row, file_path), file=sys.stderr)
+             print('Error: bad P5 index in row %d of PCR reaction file "%s".' % (i_row, file_path), file=sys.stderr)
              return(False)
-        mobj = re.match('^[acgtACGT]+$', row_list[2])
+        # Check for valid bases in P7 index sequences.
+        mobj = re.match('^([acgtACGT]+|none)$', row_list[2])
         if(mobj == None):
-             print('Bad P7 index in row %d of PCR reaction file %s' % (i_row, file_path), file=sys.stderr)
+             print('Error: bad P7 index in row %d of PCR reaction file "%s".' % (i_row, file_path), file=sys.stderr)
              return(False)
     elif(row_length == 5):
-        mobj = re.match('^[a-zA-Z0-9_:]+$', row_list[0])
+        # Check for valid characters in reaction names (first column).
+        mobj = re.match('^[-a-zA-Z0-9_]+$', row_list[0])
         if(mobj == None):
-             print('Bad reaction name in row %d of PCR reaction file %s' % (i_row, file_path), file=sys.stderr)
+             print('Error: bad reaction name in row %d of PCR reaction file "%s".' % (i_row, file_path), file=sys.stderr)
              return(False)
-#        mobj = re.match('^P[0-9][0-9][:][A-H]([0][1-9]|[1][0-2])$', row_list[1])
-        mobj = re.match('^[A-H]([0][1-9]|[1][0-2])$', row_list[1])
+        mobj = re.match('^([pP][0-9]+[-])?[a-hA-H]([0][1-9]|[1][0-2])$', row_list[1])
         if(mobj == None):
-             print('Bad P5 well name in row %d of PCR reaction file %s' % (i_row, file_path), file=sys.stderr)
+             print('Error: bad P5 well name in row %d of PCR reaction file "%s".' % (i_row, file_path), file=sys.stderr)
              return(False)
+        # Check for valid bases in P5 index sequences.
         mobj = re.match('^[acgtACGT]+$', row_list[2])
         if(mobj == None):
-             print('Bad P5 index in row %d of PCR reaction file %s' % (i_row, file_path), file=sys.stderr)
+             print('Error: bad P5 index in row %d of PCR reaction file "%s".' % (i_row, file_path), file=sys.stderr)
              return(False)
-#        mobj = re.match('^P[0-9][0-9][:][A-H]([0][1-9]|[1][0-2])$', row_list[3])
-        mobj = re.match('^[A-H]([0][1-9]|[1][0-2])$', row_list[3])
+        mobj = re.match('^([pP][0-9]+[-])?[a-hA-H]([0][1-9]|[1][0-2])$', row_list[3])
         if(mobj == None):
-             print('Bad P7 well name in row %d of PCR reaction file %s' % (i_row, file_path), file=sys.stderr)
+             print('Error: bad P7 well name in row %d of PCR reaction file "%s".' % (i_row, file_path), file=sys.stderr)
              return(False)
+        # Check for valid bases in P7 index sequences.
         mobj = re.match('^[acgtACGT]+$', row_list[4])
         if(mobj == None):
-             print('Bad P7 index in row %d of PCR reaction file %s' % (i_row, file_path), file=sys.stderr)
+             print('Error: bad P7 index in row %d of PCR reaction file "%s".' % (i_row, file_path), file=sys.stderr)
              return(False)
     else:
-        print('Bad number of columns in row %d of PCR reaction file %s' % (i_row, file_path), file=sys.stderr)
+        print('Bad number of columns in row %d of PCR reaction file "%s".' % (i_row, file_path), file=sys.stderr)
         return(False)
 
     return(True)
+
+
+def check_pcr_rxn_file(file_path, pcr_rxn_list, row_length):
+    """
+    Check PCR index file row data for various errors.
+    Args:
+        file_path (string): path to the CSV file. Used for diagnostic message
+        pcr_rxn_list (list): PCR reactions from load_pcr_indexlist()
+        row_length (integer): the expected number of elements in each row
+    Return:
+        test result (boolean): True if the file passes, False if it fails.
+    """
+    # The header is not stored in pcr_rxn_list.
+    num_row = len(pcr_rxn_list)
+
+    if(row_length ==  3):
+        i_p5_index = 1
+        i_p7_index = 2
+    elif(row_length == 5):
+        i_p5_name  = 1
+        i_p5_index = 2
+        i_p7_name  = 3
+        i_p7_index = 4
+    else:
+        print('Error: unexpected column count in file "%s"' % (file_path), file=sys.stderr)
+        return(False)
+
+    errorFlag = 0
+
+    # Check that each PCR rxn well name occurs no more than once.
+    tmp_dict = dict()
+    for i in range(num_row):
+        key = pcr_rxn_list[i][0]
+        tmp_dict[key] = tmp_dict.setdefault(key, 0) + 1
+        if(tmp_dict[key] > 1):
+            print('Error: PCR rxn well name (column 1) "%s" occurs more than once in file "%s"' % (pcr_rxn_list[i][0], file_path), file=sys.stderr)
+            errorFlag = 1
+
+    # Check that if one P5 index entry is 'none', all are 'none'.
+    num_none = 0
+    for i in range(num_row):
+        if(pcr_rxn_list[i][i_p5_index] == 'none'):
+            num_none += 1
+    if(num_none != 0 and num_none != num_row):
+        print('Error: P5 index must not be a mix of "none" and not "none" in file "%s".' % (file_path), file=sys.stderr)
+        errorFlag = 1
+
+    # Check that if one P7 index entry is 'none', all are 'none'.
+    num_none = 0
+    for i in range(num_row):
+        if(pcr_rxn_list[i][i_p7_index] == 'none'):
+            num_none += 1
+    if(num_none != 0 and num_none != num_row):
+        print('Error: P7 index must not be a mix of "none" and not "none" in file "%s".' % (file_path), file=sys.stderr)
+        errorFlag = 1
+
+    # Check that a P5 and P7 sequence pair is not repeated.
+    tmp_dict = dict()
+    for i in range(num_row):
+        key = (pcr_rxn_list[i][i_p5_index], pcr_rxn_list[i][i_p7_index])
+        tmp_dict[key] = tmp_dict.setdefault(key, 0) + 1
+        if(tmp_dict[key] > 1):
+            print('Error: P5 and P7 index sequence pair %s occurs more than once in file "%s".' % (key, file_path), file=sys.stderr)
+            errorFlag = 1
+
+    if(row_length == 5):
+        # Check that each P5 well id matches one sequence value.
+        tmp_dict = dict()
+        for i in range(num_row):
+            key = pcr_rxn_list[i][i_p5_name]
+            value = pcr_rxn_list[i][i_p5_index]
+            if(tmp_dict.get(key) != None and tmp_dict[key] != value):
+                print('Error: P5 well id "%s" matches more than one sequence in file "%s".' % (key, file_path), file=sys.stderr)
+            else:
+                tmp_dict[key] = value
+
+        # Check that each P5 sequence matches one well id.
+        tmp_dict = dict()
+        for i in range(num_row):
+            key = pcr_rxn_list[i][i_p5_index]
+            value = pcr_rxn_list[i][i_p5_name]
+            if(tmp_dict.get(key) != None and tmp_dict[key] != value):
+                print('Error: P5 index sequence "%s" matches more than one well id in file "%s".' % (key, file_path), file=sys.stderr)
+            else:
+                tmp_dict[key] = value
+
+        # Check that each P7 well id matches one sequence value.
+        tmp_dict = dict()
+        for i in range(num_row):
+            key = pcr_rxn_list[i][i_p7_name]
+            value = pcr_rxn_list[i][i_p7_index]
+            if(tmp_dict.get(key) != None and tmp_dict[key] != value):
+                print('Error: P7 well id "%s" matches more than one sequence in file "%s".' % (key, file_path), file=sys.stderr)
+            else:
+                tmp_dict[key] = value
+
+        # Check that each P7 sequence matches one well id.
+        tmp_dict = dict()
+        for i in range(num_row):
+            key = pcr_rxn_list[i][i_p7_index]
+            value = pcr_rxn_list[i][i_p7_name]
+            if(tmp_dict.get(key) != None and tmp_dict[key] != value):
+                print('Error: P7 index sequence "%s" matches more than one well id in file "%s".' % (key, file_path), file=sys.stderr)
+            else:
+                tmp_dict[key] = value
+
+        # Check that P5 and P7 well id pairs are not repeated.
+        tmp_dict = dict()
+        for i in range(num_row):
+            key = (pcr_rxn_list[i][i_p5_name], pcr_rxn_list[i][i_p7_name])
+            tmp_dict[key] = tmp_dict.setdefault(key, 0) + 1
+
+        for i in range(num_row):
+            key = (pcr_rxn_list[i][i_p5_name], pcr_rxn_list[i][i_p7_name])
+            if(tmp_dict[key] > 1):
+                print('Error: P5 and P7 well id pair %s occurs more than once in file %s.' % (key, file_path), file=sys.stderr)
+                errorFlag = 1
+
+    return(False if (errorFlag > 0) else True)
 
 
 def load_pcr_indexlist(file_path):
@@ -136,14 +276,13 @@ def load_pcr_indexlist(file_path):
 
         row_list = csvreader.__next__()
 
+        for i in range(len(row_list)):
+            row_list[i] = row_list[i].strip()
+
         if(check_pcr_rxn_header(row_list) == 'long_header'):
             row_length = 5
-            row_list[2].upper()
-            row_list[4].upper()
         elif(check_pcr_rxn_header(row_list) == 'short_header'):
             row_length = 3
-            row_list[1].upper()
-            row_list[2].upper()
         else:
             raise ValueError('Missing header in file %s' % (file_path))
 
@@ -155,22 +294,35 @@ def load_pcr_indexlist(file_path):
             if(check_pcr_rxn_row(file_path, i_row, row_length, row_list) == False):
                 sys.exit(-1)
 
-            if(row_length == 3):
-                row_list[0] = row_list[0]
-                row_list[1] = row_list[1].upper()
-                row_list[2] = row_list[2].upper()
-            else:
-                row_list[0] = row_list[0]
-                row_list[1] = row_list[1]
-                row_list[2] = row_list[2].upper()
-                row_list[3] = row_list[3]
-                row_list[4] = row_list[4].upper()
-
             pcr_rxn_list.append(row_list)
+
+    # Check file for various types of errors.
+    if(check_pcr_rxn_file(file_path, pcr_rxn_list, row_length) == False):
+        sys.exit(-1)
+
+    # Set all alphabetic characters to upper case.
+    for i_row in range(len(pcr_rxn_list)):
+        for i_col in range(row_length):
+            pcr_rxn_list[i_row][i_col] = pcr_rxn_list[i_row][i_col].upper()
+
+    # Set 'none' values to lower case.
+    if(row_length == 3):
+        i_p5_index = 1
+        i_p7_index = 2
+    else:
+        i_p5_index = 2
+        i_p7_index = 4
+
+    for i in range(len(pcr_rxn_list)):
+        if(pcr_rxn_list[i][i_p5_index] == 'NONE'):
+            pcr_rxn_list[i][i_p5_index] = 'none'
+        if(pcr_rxn_list[i][i_p7_index] == 'NONE'):
+            pcr_rxn_list[i][i_p7_index] = 'none'
+
     return(pcr_rxn_list)
 
 
-def make_pcr_whitelist(pcr_rxn_list, pcr_index, index_length, well_ids=False):
+def make_pcr_whitelist(pcr_rxn_list, pcr_index, index_length, reverse_complement=False, well_ids=False):
     """
     Make a PCR sequence/well whitelist from a PCR reaction list.
     Args:
@@ -182,6 +334,12 @@ def make_pcr_whitelist(pcr_rxn_list, pcr_index, index_length, well_ids=False):
     """
     if(pcr_index != 'p5' and pcr_index != 'p7'):
         raise ValueError('pcr_index parameter must be either "p5" or "p7"')
+
+    if(not isinstance(reverse_complement, bool)):
+        raise ValueError('reverse_complement argument must be boolean.')
+
+    if(not isinstance(well_ids, bool)):
+        raise ValueError('well_ids argument must be boolean.')
 
     row_length = len(pcr_rxn_list[0])
     if(row_length == 3):
@@ -200,8 +358,28 @@ def make_pcr_whitelist(pcr_rxn_list, pcr_index, index_length, well_ids=False):
             i_seq  = 4
 
     whitelist = dict()
+    pcr_names = dict() # Check for loss of identity below.
     for pcr_rxn in pcr_rxn_list:
-        whitelist[pcr_rxn[i_seq][0:index_length]] = pcr_rxn[i_name]
+        if(not reverse_complement):
+            key = pcr_rxn[i_seq][0:index_length]
+            whitelist[key] = pcr_rxn[i_name]
+            pcr_names.setdefault(key, []).append(pcr_rxn[i_seq])
+        else:
+            tmp_index = reverse_complement_sequence(pcr_rxn[i_seq])
+            key = tmp_index[0:index_length]
+            whitelist[key] = pcr_rxn[i_name]
+            pcr_names.setdefault(key, []).append(pcr_rxn[i_seq])
+
+    # Check that PCR sequence trimming does not result in
+    # sequences that are not distinct.
+    errorFlag = False
+    for key in pcr_names.keys():
+        if(len(set(pcr_names[key])) != 1):
+            print('Error: trimmed %s PCR primers "%s" are not distinct after' % (pcr_index.upper(), set(pcr_names[key])), file=sys.stderr)
+            print('       %strimming to %d bases.' % ('reverse complementing and ' if reverse_complement else '', index_length), file=sys.stderr)
+            errorFlag = True
+    if(errorFlag):
+       sys.exit(-1)
 
     return(whitelist)
 
@@ -209,7 +387,7 @@ def make_pcr_whitelist(pcr_rxn_list, pcr_index, index_length, well_ids=False):
 def get_programmed_pcr_combos_pcrlist(pcr_rxn_list, well_ids=False):
     """
     Make a set of valid PCR primer name pairs. The pairs are stored
-    as tuples.
+    as a set.
     Args:
         pcr_rxn_list (list): PCR reactions from load_pcr_indexlist()
         well_ids (boolean): use wells to identify primer; otherwise, use sequence
@@ -231,17 +409,67 @@ def get_programmed_pcr_combos_pcrlist(pcr_rxn_list, well_ids=False):
     return(valid_combos)
 
 
+def pcr_rxn_list(file_path, pcr_rxn_list, p5_p7):
+    """
+    Return whether the P5 or P7 indices are 'none' in the
+    pcr_rxn_list.
+    Args:
+        pcr_rxn_list (list): PCR reactions from load_pcr_indexlist()
+        p5_p7 (string): Check either the 'p5' or 'p7' values for
+                        'none'. We test earlier for the required
+                        condition that if one index is 'none', all
+                        must be 'none'.
+    """
+    row_length = len(pcr_rxn_list[0])
+    if(row_length == 3):
+        i_p5_index = 1
+        i_p7_index = 2
+    elif(row_length == 5):
+        i_p5_index = 2
+        i_p7_index = 4
+    else:
+        print('Error: there must be either 3 or 5 columns in "%s"' % (file_path), file=sys.stderr)
+        sys.exit(-1)
+
+    if(p5_p7 == 'p5' and pcr_rxn_list[0][i_p5_index] == 'none'):
+      return(True)
+    elif(p5_p7 == 'p7' and pcr_rxn_list[0][i_p7_index] == 'none'):
+      return(True)
+
+    return(False)
+
+
+def pcr_index_list_is_none(pcr_index_list, p5_p7='p5'):
+    row_length = len(pcr_index_list[0])
+    if(row_length == 3):
+        i_p5_index = 1
+        i_p7_index = 2
+    else:
+        i_p5_index = 2
+        i_p7_index = 4
+
+    if(p5_p7 == 'p5' and pcr_index_list[0][i_p5_index] == 'none'):
+        return(True)
+    elif(p5_p7 == 'p7' and pcr_index_list[0][i_p7_index] == 'none'):
+        return(True)
+    return(False)
+
+
 # Stand-alone testing.
 if __name__ == '__main__':
 
-    well_ids = False
-    pcr_rxn_list = load_pcr_indexlist('test_index_list.csv')
+    pcr_rxn_list = load_pcr_indexlist('pcr_index.csv')
+    print('load succeeds')
     print(pcr_rxn_list)
+
+    well_ids = True
+    index_length=5
+    reverse_complement_p5=True
+
     print('p5 whitelist')
-    print(make_pcr_whitelist(pcr_rxn_list, 'p5', 3, well_ids=well_ids))
+    print(make_pcr_whitelist(pcr_rxn_list, 'p5', index_length, reverse_complement=reverse_complement_p5, well_ids=well_ids))
     print('p7 whitelist')
-    print(make_pcr_whitelist(pcr_rxn_list, 'p7', 3, well_ids=well_ids))
+    print(make_pcr_whitelist(pcr_rxn_list, 'p7', index_length, reverse_complement=False, well_ids=well_ids))
     print('pcr combinations')
     print(get_programmed_pcr_combos_pcrlist(pcr_rxn_list, well_ids=well_ids))
-
 

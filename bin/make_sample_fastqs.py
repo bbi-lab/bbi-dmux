@@ -2,7 +2,12 @@
 # Make sample fastqs 2-level
 # Andrew's barcode parser/fastq combiner modified for 2-level
 
+
+# Version 20220615a
+
+
 import barcodeutils_bbi as bu
+import pcrindexutils as pu
 import argparse
 import os
 import json
@@ -138,7 +143,7 @@ if __name__ == '__main__':
     parser.add_argument('--p7_rows_used', nargs='+', required=True, help='A list of the rows used from P7 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A B C for p7 and --p5 1 2 3 for p5. Set to "0" if not used.')
     parser.add_argument('--p5_wells_used', nargs='+', required=True, help='A list of the wells used from P5 plate for PCR in same order as P7 to indicate the pairs of P7 and P5 used (e.g. --p7 A1 B1 C1 for p7 and --p5 A1 A2 A3 for p5. Alternative to p5_cols_used. Set to "0" if not used.')
     parser.add_argument('--p7_wells_used', nargs='+', required=True, help='A list of the wells used from P7 plate for PCR in same order as P5 to indicate the pairs of P7 and P5 used (e.g. --p7 A1 B1 C1 for p7 and --p5 A1 A2 A3 for p5. Alternative to p7_rows_used. Set to "0" if not used.')
-    parser.add_argument('--pcr_index_file', required=False, default='0', help='File of PCR index sequence pairs. Set to "0" if not used.')
+    parser.add_argument('--pcr_index_pair_file', required=False, default='0', help='File of PCR index sequence pairs. Set to "0" if not used.')
     parser.add_argument('--output_dir', required=True, help='Output directory for files.')
     parser.add_argument('--p7_length', type=int, default=10, help='Expected P7 index length.')
     parser.add_argument('--p5_length', type=int, default=10, help='Expected P5 index length.')
@@ -161,18 +166,16 @@ if __name__ == '__main__':
     # Reverse complement P5 sequences?
     reverse_complement_i5 = run_info['reverse_complement_i5']
 
-    # Check the p7 and p5 command line arguments for completeness
-    # and consistency. Determine whether or not the p5_wells_used
-    # and or the p7_wells_used are to be used for demultiplexing.
+    # Check the p5 and p7 command line arguments for completeness
+    # and consistency. Determine the PCR argument values to use.
     if(args.p7_rows_used != ['0'] and args.p5_cols_used != ['0']):
-        wells_used = False
-    elif( args.p7_rows_used == ['0'] and args.p5_cols_used == ['0']):
-        wells_used = True
+        pcr_arg = 'row_col'
+    elif(args.p7_wells_used != ['0'] and args.p5_wells_used != ['0']):
+        pcr_arg = 'well_id'
+    elif(args.pcr_index_pair_file != '0'):
+        pcr_arg = 'index_file'
     else:
-        raise ValueError('Only one of args.p7_rows_used and args.p5_cols_used is set "0". Either both or neither must be set to "0".')
-
-    if(wells_used and (args.p7_wells_used == ['0'] or args.p5_wells_used == ['0'])):
-        raise ValueError('Only one of args.p7_wells_used and args.p5_wells_used is set "0". Either both or neither must be set to "0".')
+        raise ValueError('Missing PCR command line argument(s).')
 
     # Make a set of well ids for a 96-well plate. The well ids are used
     # to make expected PCR well combinations from the command line
@@ -209,27 +212,32 @@ if __name__ == '__main__':
             args.p7_wells_used = all_p7
             args.p5_wells_used = all_p5
 
+    # If p5 columns argument is not 'none', convert column values to integers.
+    if(pcr_arg == 'row_col' and args.p5_cols_used != ["none"]):
+        args.p5_cols_used = [int(x) for x in args.p5_cols_used]
+
+    # Generate expected PCR P5 and P7 well combinations.
+    if(pcr_arg == 'row_col'):
+        programmed_pcr_combos = get_programmed_pcr_combos(p5_lookup, p7_lookup, args.p5_cols_used, args.p7_rows_used)
+    elif(pcr_arg == 'well_id'):
+        programmed_pcr_combos = get_programmed_pcr_combos_wells(args.p5_wells_used, args.p7_wells_used)
+    elif(pcr_arg == 'index_file'):
+        pcr_rxn_list = pu.load_pcr_indexlist(args.pcr_index_pair_file)
+        programmed_pcr_combos = pu.get_programmed_pcr_combos_pcrlist(pcr_rxn_list, well_ids=True)
+        p5_lookup = pu.make_pcr_whitelist(pcr_rxn_list, 'p5', args.p5_length, reverse_complement=reverse_complement_i5, well_ids=True)
+        p7_lookup = pu.make_pcr_whitelist(pcr_rxn_list, 'p7', args.p7_length, reverse_complement=False, well_ids=True)
+
     # Are p5 indices used, or are they 'none'?
-    if args.p5_cols_used == ["none"] or args.p5_wells_used == ["none"]:
+    if(args.p5_cols_used == ["none"] or args.p5_wells_used == ["none"] or (pcr_arg == 'index_file' and pu.pcr_index_list_is_none(pcr_rxn_list, 'p5'))):
         p5_none = True
     else:
         p5_none = False
 
     # Are p7 indices used, or are they 'none'?
-    if args.p7_rows_used == ["none"] or args.p7_wells_used == ["none"]:
+    if(args.p7_rows_used == ["none"] or args.p7_wells_used == ["none"] or (pcr_arg == 'index_file' and pu.pcr_index_list_is_none(pcr_rxn_list, 'p7'))):
         p7_none = True
     else:
         p7_none = False
-
-    # If p5 indices are used, convert to integers for columns.
-    if not p5_none:
-        args.p5_cols_used = [int(x) for x in args.p5_cols_used]
-
-    # Generate expected PCR P7 and P5 well combinations.
-    if not wells_used:
-        programmed_pcr_combos = get_programmed_pcr_combos(p5_lookup, p7_lookup, args.p5_cols_used, args.p7_rows_used)
-    else:
-        programmed_pcr_combos = get_programmed_pcr_combos_wells(args.p5_wells_used, args.p7_wells_used)
 
     # Prepare to load RT barcode files.
     if args.rt_barcode_file == "default":
@@ -268,14 +276,15 @@ if __name__ == '__main__':
         ligation_9_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 9}
         ligation_10_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 10}
 
-    # Load PCR barcodes.
-    p7_lookup = bu.load_whitelist(p7file)
-    p7_lookup = {sequence[0:args.p7_length]: well for sequence,well in p7_lookup.items()}
+    if(pcr_arg == 'row_col' or pcr_arg == 'well_id'):
+        # Load PCR barcodes.
+        p7_lookup = bu.load_whitelist(p7file)
+        p7_lookup = {sequence[0:args.p7_length]: well for sequence,well in p7_lookup.items()}
 
-    p5_lookup = bu.load_whitelist(p5file)
-    if reverse_complement_i5:
-        p5_lookup = {bu.reverse_complement(sequence): well for sequence,well in p5_lookup.items()}
-    p5_lookup = {sequence[0:args.p5_length]: well for sequence,well in p5_lookup.items()}
+        p5_lookup = bu.load_whitelist(p5file)
+        if reverse_complement_i5:
+            p5_lookup = {bu.reverse_complement(sequence): well for sequence,well in p5_lookup.items()}
+        p5_lookup = {sequence[0:args.p5_length]: well for sequence,well in p5_lookup.items()}
 
     # Define where all sequences are and what the whitelists are
     if p5_none:

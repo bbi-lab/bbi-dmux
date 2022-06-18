@@ -108,6 +108,7 @@ def quick_parse(file_path):
         entries_dict = dict(zip(columns, entries))
         yield entries_dict
 
+
 def load_sample_layout(file_path, multi_exp):
     """
     Function that loads the sample layout file to an RT p5_lookup table.
@@ -156,6 +157,34 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
 
+    # Check some argument values.
+
+    # Check the p5 and p7 command line arguments for completeness
+    # and consistency. Determine the PCR argument values to use.
+    if(args.p7_rows_used != ['0'] ^ args.p5_cols_used != ['0']):
+        raise ValueError('Missing either --p5_cols_used or --p7_rows_used.')
+
+    if(args.p7_wells_used != ['0'] ^ args.p5_wells_used != ['0']):
+        raise ValueError('Missing either --p5_wells_used or --p7_wells_used.')
+
+    if(args.p7_rows_used != ['0'] and args.p5_cols_used != ['0']):
+        pcr_arg = 'row_col'
+    elif(args.p7_wells_used != ['0'] and args.p5_wells_used != ['0']):
+        pcr_arg = 'well_id'
+    elif(args.pcr_index_pair_file != '0'):
+        pcr_arg = 'index_file'
+    elif(args.multi_exp != '0'):
+        pcr_arg = 'multi_exp'
+    else:
+        raise ValueError('Missing PCR command line argument(s).')
+
+    # args.p5_barcode_file and args.p7_barcode_file cannot be used
+    # in combination with args.pcr_index_pair_file.
+    if(args.pcr_index_pair_file != '0' and \
+       (args.p5_barcode_file != 0 or args.p7_barcode_file)):
+        raise ValueError('The arguments --p5_barcode_file and --p7_barcode_file cannot be used with --pcr_index_pair_file.')
+
+
     # Read flowcell runParameters.xml file and infer whether or not the
     # P5 index is reverse complemented.
     run_info = run_info.get_run_info( args.run_directory, pipeline_type='RNA-seq' )
@@ -166,17 +195,6 @@ if __name__ == '__main__':
     # Reverse complement P5 sequences?
     reverse_complement_i5 = run_info['reverse_complement_i5']
 
-    # Check the p5 and p7 command line arguments for completeness
-    # and consistency. Determine the PCR argument values to use.
-    if(args.p7_rows_used != ['0'] and args.p5_cols_used != ['0']):
-        pcr_arg = 'row_col'
-    elif(args.p7_wells_used != ['0'] and args.p5_wells_used != ['0']):
-        pcr_arg = 'well_id'
-    elif(args.pcr_index_pair_file != '0'):
-        pcr_arg = 'index_file'
-    else:
-        raise ValueError('Missing PCR command line argument(s).')
-
     # Make a set of well ids for a 96-well plate. The well ids are used
     # to make expected PCR well combinations from the command line
     # arguments.
@@ -186,6 +204,12 @@ if __name__ == '__main__':
 
     # If PCR indices, as well as RT barcodes, are used to identify
     # samples, set up now.
+    # Multi-exp argument examples:
+    #   multi-exp expressed as rows and columns:
+    #     params.multi_exp = "{'Experiment 1':('D E', '4 5'), 'Experiment 2':('F', '3')}"
+    #   multi-exp expressed as wells:
+    #     params.multi_exp = "{'Experiment 1':('D3 E3', 'B2 B7'), 'Experiment 2':('F4', 'G3')}
+    #
     multi_exp = True if ( args.multi_exp != 0 ) else False
     if multi_exp:
         all_p7 = ""
@@ -387,8 +411,6 @@ if __name__ == '__main__':
         sample_to_output_filename_lookup = {sample: os.path.join(args.output_dir, '%s-%s' % (sample, suffix)) for well,sample in sample_rt_exp_lookup.items()}
         sample_to_output_file_lookup = {sample: open(filename, 'w') for sample,filename in sample_to_output_filename_lookup.items()}
         print("Demuxing %s samples (%s total RT wells) into their own files..." % (len(sample_to_output_filename_lookup), len(sample_rt_exp_lookup)))
-
-     
     else:
         sample_rt_lookup = load_sample_layout(args.sample_layout, multi_exp)
         sample_to_output_filename_lookup = {sample: os.path.join(args.output_dir, '%s-%s' % (sample, suffix)) for well,sample in sample_rt_lookup.items()}

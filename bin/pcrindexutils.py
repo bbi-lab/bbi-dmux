@@ -231,7 +231,7 @@ def check_pcr_rxn_file(file_path, pcr_rxn_list, row_length):
 
 def load_pcr_indexlist(file_path):
     """
-    Load PCR index list into xxx.
+    Load PCR index list into a (Python) list.
     PCR index list file headers:
 
       pcr_rxn_name,p5_index,p7_index
@@ -242,7 +242,8 @@ def load_pcr_indexlist(file_path):
     use in the cell read names rather than the index
     sequences.
 
-    The pcr_rxn_name is printable text.
+    The pcr_rxn_name is printable text restricted to the
+    characters in the regex '^[-a-zA-Z0-9_]+$'.
 
     The p5_well and p7_well name format is
 
@@ -260,7 +261,9 @@ def load_pcr_indexlist(file_path):
     number in the range 01-12; that is, A01-H12.
 
     The index is a DNA sequence in lower or upper case
-    but will is stored as upper case.
+    but will be stored as upper case. The sequence can
+    also be given as the string 'none'. If any entry,
+    in the column is 'none', all must be.
 
     The fields are separated by commas.
     Args:
@@ -409,7 +412,7 @@ def get_programmed_pcr_combos_pcrlist(pcr_rxn_list, well_ids=False):
     return(valid_combos)
 
 
-def pcr_rxn_list(file_path, pcr_rxn_list, p5_p7):
+def pcr_index_list_is_none(file_path, pcr_rxn_list, p5_p7='p5'):
     """
     Return whether the P5 or P7 indices are 'none' in the
     pcr_rxn_list.
@@ -419,6 +422,10 @@ def pcr_rxn_list(file_path, pcr_rxn_list, p5_p7):
                         'none'. We test earlier for the required
                         condition that if one index is 'none', all
                         must be 'none'.
+    Return
+        A boolean that reflects whether the values in the specified
+        column are all 'none' (True is returned) or none of the values
+        are 'none' (False is returned).
     """
     row_length = len(pcr_rxn_list[0])
     if(row_length == 3):
@@ -436,22 +443,6 @@ def pcr_rxn_list(file_path, pcr_rxn_list, p5_p7):
     elif(p5_p7 == 'p7' and pcr_rxn_list[0][i_p7_index] == 'none'):
       return(True)
 
-    return(False)
-
-
-def pcr_index_list_is_none(pcr_index_list, p5_p7='p5'):
-    row_length = len(pcr_index_list[0])
-    if(row_length == 3):
-        i_p5_index = 1
-        i_p7_index = 2
-    else:
-        i_p5_index = 2
-        i_p7_index = 4
-
-    if(p5_p7 == 'p5' and pcr_index_list[0][i_p5_index] == 'none'):
-        return(True)
-    elif(p5_p7 == 'p7' and pcr_index_list[0][i_p7_index] == 'none'):
-        return(True)
     return(False)
 
 

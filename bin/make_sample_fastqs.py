@@ -148,7 +148,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', required=True, help='Output directory for files.')
     parser.add_argument('--p7_length', type=int, default=10, help='Expected P7 index length.')
     parser.add_argument('--p5_length', type=int, default=10, help='Expected P5 index length.')
-    parser.add_argument('--multi_exp', type=ast.literal_eval)
+    parser.add_argument('--multi_exp', type=ast.literal_eval, default='0', help='Define PCR wells and experiments in multi-experiment mode.')
     parser.add_argument('--level', required=True, help = "2 or 3 level sci?")
     parser.add_argument('--rt_barcode_file', required=True, help='Path to RT barcode file, or "default".')
     parser.add_argument('--p5_barcode_file', required=True, help='Path to p5 barcode file, or "default".')
@@ -156,34 +156,43 @@ if __name__ == '__main__':
     parser.add_argument('--lig_barcode_file', required=True, help='Path to ligation barcode file, or "default".')
     args = parser.parse_args()
 
+    p5_cols_used = args.p5_cols_used
+    p7_rows_used = args.p7_rows_used
+
+    p5_wells_used = args.p5_wells_used
+    p7_wells_used = args.p7_wells_used
 
     # Check some argument values.
 
     # Check the p5 and p7 command line arguments for completeness
     # and consistency. Determine the PCR argument values to use.
-    if(args.p7_rows_used != ['0'] ^ args.p5_cols_used != ['0']):
+    if((p7_rows_used != ['0']) ^ (p5_cols_used != ['0'])):
         raise ValueError('Missing either --p5_cols_used or --p7_rows_used.')
 
-    if(args.p7_wells_used != ['0'] ^ args.p5_wells_used != ['0']):
+    if((p7_wells_used != ['0']) ^ (p5_wells_used != ['0'])):
         raise ValueError('Missing either --p5_wells_used or --p7_wells_used.')
-
-    if(args.p7_rows_used != ['0'] and args.p5_cols_used != ['0']):
-        pcr_arg = 'row_col'
-    elif(args.p7_wells_used != ['0'] and args.p5_wells_used != ['0']):
-        pcr_arg = 'well_id'
-    elif(args.pcr_index_pair_file != '0'):
-        pcr_arg = 'index_file'
-    elif(args.multi_exp != '0'):
-        pcr_arg = 'multi_exp'
-    else:
-        raise ValueError('Missing PCR command line argument(s).')
 
     # args.p5_barcode_file and args.p7_barcode_file cannot be used
     # in combination with args.pcr_index_pair_file.
     if(args.pcr_index_pair_file != '0' and \
-       (args.p5_barcode_file != 0 or args.p7_barcode_file)):
+       (args.p5_barcode_file != 'default' or args.p7_barcode_file != 'default')):
         raise ValueError('The arguments --p5_barcode_file and --p7_barcode_file cannot be used with --pcr_index_pair_file.')
 
+    # Identify the PCR specs to use.
+    if(p7_rows_used != ['0'] and p5_cols_used != ['0']):
+        pcr_arg = 'row_col'
+    elif(p7_wells_used != ['0'] and p5_wells_used != ['0']):
+        pcr_arg = 'well_id'
+    elif(str(args.pcr_index_pair_file) != '0'):
+        pcr_arg = 'index_file'
+    elif(str(args.multi_exp) != '0'):
+        pcr_arg = 'multi_exp'
+    else:
+        raise ValueError('Missing PCR command line argument(s).')
+
+    # If p5 columns argument is not 'none', convert column values to integers.
+    if(pcr_arg == 'row_col' and p5_cols_used != ["none"]):
+        p5_cols_used = [int(x) for x in p5_cols_used]
 
     # Read flowcell runParameters.xml file and infer whether or not the
     # P5 index is reverse complemented.
@@ -195,12 +204,53 @@ if __name__ == '__main__':
     # Reverse complement P5 sequences?
     reverse_complement_i5 = run_info['reverse_complement_i5']
 
-    # Make a set of well ids for a 96-well plate. The well ids are used
-    # to make expected PCR well combinations from the command line
-    # arguments.
-    well_id_list = bu.generate_well_ids(nrow=8, ncol=12)
-    p5_lookup = {well_id: well_id for well_id in well_id_list}
-    p7_lookup = p5_lookup
+    # Identify the RT barcode file to load.
+    if args.rt_barcode_file == "default":
+        if args.level == "3":
+            rtfile = RT3_FILE
+        else:
+            rtfile = RT_FILE
+    else:
+        rtfile = args.rt_barcode_file
+
+    # Prepare to load PCR primer sequence files into lookup dicts.
+    if(pcr_arg == 'row_col' or pcr_arg == 'well_id' or pcr_arg == 'multi_exp'):
+        if(args.p5_barcode_file == "default"):
+            p5file = P5_FILE
+        else:
+            p5file = args.p5_barcode_file
+    
+        if(args.p7_barcode_file == "default"):
+            p7file = P7_FILE
+        else:
+            p7file = args.p7_barcode_file
+
+        # Load PCR barcodes.
+        p7_lookup = bu.load_whitelist(p7file)
+        p7_lookup = {sequence[0:args.p7_length]: well for sequence,well in p7_lookup.items()}
+
+        p5_lookup = bu.load_whitelist(p5file)
+        if reverse_complement_i5:
+            p5_lookup = {bu.reverse_complement(sequence): well for sequence,well in p5_lookup.items()}
+        p5_lookup = {sequence[0:args.p5_length]: well for sequence,well in p5_lookup.items()}
+    elif(pcr_arg == 'index_file'):
+        pcr_rxn_list = pu.load_pcr_indexlist(args.pcr_index_pair_file)
+        p5_lookup = pu.make_pcr_whitelist(pcr_rxn_list, 'p5', args.p5_length, reverse_complement=reverse_complement_i5, well_ids=True)
+        p7_lookup = pu.make_pcr_whitelist(pcr_rxn_list, 'p7', args.p7_length, reverse_complement=False, well_ids=True)
+    else:
+        raise ValueError('Unrecognized pcr_arg value.')
+
+    # Identify ligation sequence file to load.
+    if args.lig_barcode_file == "default":
+        ligfile = LIG_FILE
+    else:
+        ligfile = args.lig_barcode_file
+
+    # Load and process ligation barcodes.
+    if args.level == "3":
+        ligation_lookup = bu.load_whitelist(ligfile, variable_lengths=True)
+        ligation_9_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 9}
+        ligation_10_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 10}
 
     # If PCR indices, as well as RT barcodes, are used to identify
     # samples, set up now.
@@ -210,7 +260,7 @@ if __name__ == '__main__':
     #   multi-exp expressed as wells:
     #     params.multi_exp = "{'Experiment 1':('D3 E3', 'B2 B7'), 'Experiment 2':('F4', 'G3')}
     #
-    multi_exp = True if ( args.multi_exp != 0 ) else False
+    multi_exp = True if ( str(args.multi_exp) != "0" ) else False
     if multi_exp:
         all_p7 = ""
         all_p5 = ""
@@ -230,87 +280,41 @@ if __name__ == '__main__':
         all_p5 = all_p5.strip().split(" ")
 
         if len(all_p7[0]) == 1:
-            args.p7_rows_used = all_p7
-            args.p5_cols_used = all_p5
+            p7_rows_used = all_p7
+            p5_cols_used = all_p5
+            p5_cols_used = [int(x) for x in p5_cols_used]
+            multi_exp_wells = False
         else:
-            args.p7_wells_used = all_p7
-            args.p5_wells_used = all_p5
-
-    # If p5 columns argument is not 'none', convert column values to integers.
-    if(pcr_arg == 'row_col' and args.p5_cols_used != ["none"]):
-        args.p5_cols_used = [int(x) for x in args.p5_cols_used]
+            p7_wells_used = all_p7
+            p5_wells_used = all_p5
+            multi_exp_wells = True
 
     # Generate expected PCR P5 and P7 well combinations.
-    if(pcr_arg == 'row_col'):
-        programmed_pcr_combos = get_programmed_pcr_combos(p5_lookup, p7_lookup, args.p5_cols_used, args.p7_rows_used)
-    elif(pcr_arg == 'well_id'):
-        programmed_pcr_combos = get_programmed_pcr_combos_wells(args.p5_wells_used, args.p7_wells_used)
+    if(pcr_arg == 'row_col' or (multi_exp == True and multi_exp_wells == False)):
+        programmed_pcr_combos = get_programmed_pcr_combos(p5_lookup, p7_lookup, p5_cols_used, p7_rows_used)
+    elif(pcr_arg == 'well_id' or (multi_exp == True and multi_exp_wells == True)):
+        programmed_pcr_combos = get_programmed_pcr_combos_wells(p5_wells_used, p7_wells_used)
     elif(pcr_arg == 'index_file'):
-        pcr_rxn_list = pu.load_pcr_indexlist(args.pcr_index_pair_file)
         programmed_pcr_combos = pu.get_programmed_pcr_combos_pcrlist(pcr_rxn_list, well_ids=True)
-        p5_lookup = pu.make_pcr_whitelist(pcr_rxn_list, 'p5', args.p5_length, reverse_complement=reverse_complement_i5, well_ids=True)
-        p7_lookup = pu.make_pcr_whitelist(pcr_rxn_list, 'p7', args.p7_length, reverse_complement=False, well_ids=True)
+    else:
+        raise ValueError('No path to make programmed_pcr_combos.')
 
     # Are p5 indices used, or are they 'none'?
-    if(args.p5_cols_used == ["none"] or args.p5_wells_used == ["none"] or (pcr_arg == 'index_file' and pu.pcr_index_list_is_none(pcr_rxn_list, 'p5'))):
+    if(p5_cols_used == ["none"] or p5_wells_used == ["none"] or \
+       (pcr_arg == 'index_file' and pu.pcr_index_list_is_none(args.pcr_index_pair_file, pcr_rxn_list, 'p5'))):
         p5_none = True
     else:
         p5_none = False
 
     # Are p7 indices used, or are they 'none'?
-    if(args.p7_rows_used == ["none"] or args.p7_wells_used == ["none"] or (pcr_arg == 'index_file' and pu.pcr_index_list_is_none(pcr_rxn_list, 'p7'))):
+    if(p7_rows_used == ["none"] or p7_wells_used == ["none"] or \
+       (pcr_arg == 'index_file' and pu.pcr_index_list_is_none(args.pcr_index_pair_file, pcr_rxn_list, 'p7'))):
         p7_none = True
     else:
         p7_none = False
 
-    # Prepare to load RT barcode files.
-    if args.rt_barcode_file == "default":
-        if args.level == "3":
-            rtfile = RT3_FILE
-        else:
-            rtfile = RT_FILE
-    else:
-        rtfile = args.rt_barcode_file
-
-    # Prepare to load PCR primer sequence files.
-    if args.p5_barcode_file == "default":
-        p5file = P5_FILE
-    else:
-        p5file = args.p5_barcode_file
-
-    if args.p7_barcode_file == "default":
-        p7file = P7_FILE
-    else:
-        p7file = args.p7_barcode_file
-    
-    if args.lig_barcode_file == "default":
-        ligfile = LIG_FILE
-    else:
-        ligfile = args.lig_barcode_file
-
-    lane_num = args.file_name
-    lane_num = lane_num.replace("Undetermined_S0_L", "L")
-    lane_num = lane_num.replace("_R1_001.fastq.gz", "")
-    stats_file = os.path.join(args.output_dir, lane_num + ".stats.json")
-    suffix = lane_num + ".fastq"
-
-    # Load and process ligation barcodes.
-    if args.level == "3":
-        ligation_lookup = bu.load_whitelist(ligfile, variable_lengths=True)
-        ligation_9_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 9}
-        ligation_10_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 10}
-
-    if(pcr_arg == 'row_col' or pcr_arg == 'well_id'):
-        # Load PCR barcodes.
-        p7_lookup = bu.load_whitelist(p7file)
-        p7_lookup = {sequence[0:args.p7_length]: well for sequence,well in p7_lookup.items()}
-
-        p5_lookup = bu.load_whitelist(p5file)
-        if reverse_complement_i5:
-            p5_lookup = {bu.reverse_complement(sequence): well for sequence,well in p5_lookup.items()}
-        p5_lookup = {sequence[0:args.p5_length]: well for sequence,well in p5_lookup.items()}
-
-    # Define where all sequences are and what the whitelists are
+    # Define where barcodes are located in sequences and
+    # what the whitelists are.
     if p5_none:
         pcr_spec = {
             'p7': {
@@ -399,7 +403,7 @@ if __name__ == '__main__':
         }
     barcode_spec.update(pcr_spec)
     
-    # Prepare output files.
+    # Set up output file names.
     lane_num = args.file_name
     lane_num = lane_num.replace("Undetermined_S0_L", "L")
     lane_num = lane_num.replace("_R1_001.fastq.gz", "")

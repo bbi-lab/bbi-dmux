@@ -31,6 +31,7 @@ qlogin -l mfree=16G
 
 ## Installation
 
+
 If you install the pipeline on a cluster with a mix of CPU architectures,
 then when you qlogin to the cluster for the installation procedure,
 request a node with the minimum CPU ID level on which you intend to run the pipeline.
@@ -69,6 +70,12 @@ git clone https://github.com/andrewhill157/barcodeutils.git
 pushd barcodeutils
 python setup.py install --user
 popd
+```
+
+Then, build the required python3 environment by running the script
+
+```
+create_virtual_envs.sh
 ```
 
 Then, install monocle3 and garnett by running:

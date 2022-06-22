@@ -1,4 +1,17 @@
 /*
+** Notes:
+**   o  hashed experiments can use many wells with a single RT
+**      barcode so all 'samples' are demultiplexed into a single
+**      fastq file, which is likely to become very large. Our
+**      solution is to split the demultiplexed fastq file when
+**      a single sample occupies more than
+**      params.max_wells_per_sample wells.
+**      (The samples are later split into individual fastq files
+**      based on the hash sequence reads.)
+**
+*/
+
+/*
 ** Check that Nextflow version meets minimum version requirements.
 */
 def minMajorVersion = 20
@@ -90,7 +103,7 @@ if (params.help) {
     log.info '    --run_recovery true                        Add this to run the recovery script AFTER running the normal pipeline.'
     log.info '    --generate_samplesheets input_csv          Add this to generate the necessary samplesheet from the BBI universal input sheet.'    
     log.info ''
-    log.info 'Issues? Contact hpliner@uw.edu'
+    log.info 'Leave issue reports at "https://github.com/bbi-lab/bbi-dmux/issues".'
     exit 1
 }
 

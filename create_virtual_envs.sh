@@ -42,10 +42,11 @@ PYPY3_PATH='/net/gs/vol3/software/modules-sw/pypy/3.9-7.3.9/Linux/CentOS7/x86_64
 #
 # Prepare pypy virtual environment.
 #
-module purge
-module load modules modules-init modules-gs
 export DIR=$(dirname `readlink -f $0`)
 source $DIR/load_pypy_env_reqs.sh
+
+module purge
+module load modules modules-init modules-gs
 module load git/2.18.0
 
 echo 'Cleaning cache directories...'

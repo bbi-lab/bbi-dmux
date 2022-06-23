@@ -5,10 +5,9 @@
 **      fastq file, which is likely to become very large. Our
 **      solution is to split the demultiplexed fastq file when
 **      a single sample occupies more than
-**      params.max_wells_per_sample wells.
-**      (The samples are later split into individual fastq files
-**      based on the hash sequence reads.)
-**
+**      params.max_wells_per_sample wells. (The split-sample
+**      fastq files are re-combined into a single file, which
+**      is used to make a single cell_data_set.)
 */
 
 /*

@@ -90,7 +90,7 @@ def check_pcr_rxn_row(file_path, i_row, row_length, row_list):
              print('Error: bad P5 well name in row %d of PCR reaction file "%s".' % (i_row, file_path), file=sys.stderr)
              return(False)
         # Check for valid bases in P5 index sequences.
-        mobj = re.match('^[acgtACGT]+$', row_list[2])
+        mobj = re.match('^([acgtACGT]+|none)$', row_list[2])
         if(mobj == None):
              print('Error: bad P5 index in row %d of PCR reaction file "%s".' % (i_row, file_path), file=sys.stderr)
              return(False)
@@ -99,7 +99,7 @@ def check_pcr_rxn_row(file_path, i_row, row_length, row_list):
              print('Error: bad P7 well name in row %d of PCR reaction file "%s".' % (i_row, file_path), file=sys.stderr)
              return(False)
         # Check for valid bases in P7 index sequences.
-        mobj = re.match('^[acgtACGT]+$', row_list[4])
+        mobj = re.match('^([acgtACGT]+|none)$', row_list[4])
         if(mobj == None):
              print('Error: bad P7 index in row %d of PCR reaction file "%s".' % (i_row, file_path), file=sys.stderr)
              return(False)
@@ -167,6 +167,8 @@ def check_pcr_rxn_file(file_path, pcr_rxn_list, row_length):
     # Check that a P5 and P7 sequence pair is not repeated.
     tmp_dict = dict()
     for i in range(num_row):
+        if(pcr_rxn_list[i][i_p5_index] == 'none' or pcr_rxn_list[i][i_p7_index] == 'none'):
+          continue
         key = (pcr_rxn_list[i][i_p5_index], pcr_rxn_list[i][i_p7_index])
         tmp_dict[key] = tmp_dict.setdefault(key, 0) + 1
         if(tmp_dict[key] > 1):
@@ -188,6 +190,8 @@ def check_pcr_rxn_file(file_path, pcr_rxn_list, row_length):
         tmp_dict = dict()
         for i in range(num_row):
             key = pcr_rxn_list[i][i_p5_index]
+            if(key == 'none'):
+              continue
             value = pcr_rxn_list[i][i_p5_name]
             if(tmp_dict.get(key) != None and tmp_dict[key] != value):
                 print('Error: P5 index sequence "%s" matches more than one well id in file "%s".' % (key, file_path), file=sys.stderr)
@@ -208,6 +212,8 @@ def check_pcr_rxn_file(file_path, pcr_rxn_list, row_length):
         tmp_dict = dict()
         for i in range(num_row):
             key = pcr_rxn_list[i][i_p7_index]
+            if(key == 'none'):
+              continue
             value = pcr_rxn_list[i][i_p7_name]
             if(tmp_dict.get(key) != None and tmp_dict[key] != value):
                 print('Error: P7 index sequence "%s" matches more than one well id in file "%s".' % (key, file_path), file=sys.stderr)
@@ -399,15 +405,21 @@ def get_programmed_pcr_combos_pcrlist(pcr_rxn_list, well_ids=False):
     """
     row_length = len(pcr_rxn_list[0])
     if(row_length == 3):
-        i_p5_name = 1 
-        i_p7_name = 2 
+        i_p5_name  = 1 
+        i_p5_index = 1 
+        i_p7_name =  2 
+        i_p7_index = 2 
     elif(row_length == 5):
-        i_p5_name = 1 if well_ids else 2
-        i_p7_name = 3 if well_ids else 4
+        i_p5_name  = 1 if well_ids else 2
+        i_p5_index = 2 
+        i_p7_name =  3 if well_ids else 4
+        i_p7_index = 4
 
     valid_combos = set()
     for pcr_rxn in pcr_rxn_list:
-        valid_combos.add((pcr_rxn[i_p5_name], pcr_rxn[i_p7_name]))
+        p5_name = pcr_rxn[i_p5_name] if pcr_rxn[i_p5_index] != 'none' else 'none'
+        p7_name = pcr_rxn[i_p7_name] if pcr_rxn[i_p7_index] != 'none' else 'none'
+        valid_combos.add((p5_name, p7_name))
 
     return(valid_combos)
 

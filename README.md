@@ -72,13 +72,14 @@ python setup.py install --user
 popd
 ```
 
-Then, build the required python3 environment by running the script
+Then, install the required pypy3 packages by running the script
 
 ```
-create_virtual_envs.sh
+module load pypy/3.9-7.3.9
+pypy3 -m pip install Bio --user
 ```
 
-Then, install monocle3 and garnett by running:
+and install monocle3 and garnett by running:
 
 ```
 module load gcc/8.1.0

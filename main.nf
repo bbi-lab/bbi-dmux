@@ -245,8 +245,6 @@ process seg_sample_fastqs {
     """
     mkdir demux_out
 
-    source $script_dir/pypy_rnaseq_env/bin/activate
-
     pypy3 ${script_dir}/make_sample_fastqs.py --run_directory $params.run_dir \
         --read1 <(zcat $R1) --read2 <(zcat $R2) \
         --file_name $R1 --sample_layout $sample_sheet_file1 \
@@ -259,8 +257,6 @@ process seg_sample_fastqs {
         --lig_barcode_file $params.lig_barcode_file \
         --multi_exp "$params.multi_exp" \
         --output_dir ./demux_out --level $params.level
-
-    deactivate
 
     pigz -p 8 demux_out/*.fastq
     """    

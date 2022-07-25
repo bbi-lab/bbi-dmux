@@ -125,6 +125,8 @@ process generate_sheets {
 
 
     """
+    set -ueo pipefail
+
     generate_sample_sheets.py $params.generate_samplesheets
     """
 }
@@ -154,6 +156,8 @@ process check_sample_sheet {
         params.generate_samplesheets == "no_input"
 
     """
+    set -ueo pipefail
+
     check_sample_sheet.py --sample_sheet $params.sample_sheet --star_file $star_file --level $params.level --rt_barcode_file $params.rt_barcode_file --max_wells_per_samp $params.max_wells_per_sample    
     """
 }
@@ -178,6 +182,8 @@ process make_sample_sheet {
         !params.run_recovery
 
     """
+    set -ueo pipefail
+
     make_sample_sheet.py --run_directory $params.run_dir
 
     """    
@@ -206,6 +212,8 @@ process bcl2fastq {
         file "lane_fastqs/fake*.gz" optional true into fakes mode flatten
 
     """
+    set -ueo pipefail
+
     min_threads=\$((($max_cores_bcl/2)<4 ? ($max_cores_bcl/2):4))
 
     bcl2fastq -R $params.run_dir --output-dir ./lane_fastqs \
@@ -243,6 +251,8 @@ process seg_sample_fastqs {
         file "demux_out/*.csv" into csv_stats
     
     """
+    set -ueo pipefail
+
     mkdir demux_out
 
     pypy3 ${script_dir}/make_sample_fastqs.py --run_directory $params.run_dir \
@@ -277,6 +287,8 @@ process demux_dash {
         file "demux_dash" into demux_dash
 
     """
+    set -ueo pipefail
+
     mkdir demux_dash
     cp -R $baseDir/bin/skeleton_dash/* demux_dash/
     generate_html.R \
@@ -305,6 +317,8 @@ process run_recovery {
 
 
     """
+    set -ueo pipefail
+
     recovery_script.py --input_file <(zcat $input) --output_file ${input}.txt \
         --run_directory $params.run_dir \
         --sample_layout $sample_sheet_file5 \
@@ -332,6 +346,8 @@ process sum_recovery {
         file "*summary.js"
 
     """
+    set -ueo pipefail
+
    echo "const log_data = {" > recovery_summary.js
    for file in $summary
    do

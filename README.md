@@ -31,6 +31,7 @@ qlogin -l mfree=16G
 
 ## Installation
 
+
 If you install the pipeline on a cluster with a mix of CPU architectures,
 then when you qlogin to the cluster for the installation procedure,
 request a node with the minimum CPU ID level on which you intend to run the pipeline.
@@ -71,7 +72,14 @@ python setup.py install --user
 popd
 ```
 
-Then, install monocle3 and garnett by running:
+Then, install the required pypy3 packages by running the script
+
+```
+module load pypy/3.9-7.3.9
+pypy3 -m pip install Bio --user
+```
+
+and install monocle3 and garnett by running:
 
 ```
 module load gcc/8.1.0

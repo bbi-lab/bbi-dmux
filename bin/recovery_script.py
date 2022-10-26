@@ -470,7 +470,7 @@ def make_undetermined_dict_2lvl(read_file, out_file):
     for item in sorted_rt[:20]:
         sf.write('{}    {}\n'.format(item[0],item[1]))
 
-    sf.write("\n\nThe top bad pcr combos are:\n")
+    sf.write("\n\nThe top bad pcr combos (P5,P7) are:\n")
     sorted_pcr = sorted(pcr_combo_dict.items(), key=operator.itemgetter(1), reverse=True)
     for item in sorted_pcr[:20]:
         sf.write('{}    {}\n'.format(item[0],item[1]))

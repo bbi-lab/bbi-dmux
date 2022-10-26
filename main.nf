@@ -1,4 +1,9 @@
 /*
+** This pipeline is written for Nextflow DSL 1.
+*/
+nextflow.enable.dsl = 1
+
+/*
 ** Notes:
 **   o  hashed experiments can use many wells with a single RT
 **      barcode so all 'samples' are demultiplexed into a single

@@ -1,6 +1,7 @@
 Human   /net/bbi/vol1/data/genomes_stage/human/human_star 60
 Human_gencode /net/bbi/vol1/data/genomes_stage/human_gencode/human_gencode_star 60
 Mouse   /net/bbi/vol1/data/genomes_stage/mouse/mouse_star 47
+Mouse_davis    /net/bbi/vol1/data/genomes_stage/mouse_davis/mouse_davis_star 47
 Mouse_gencode /net/bbi/vol1/data/genomes_stage/mouse_gencode/mouse_gencode_star 47
 Mouse_tdTomato /net/bbi/vol1/data/genomes_stage/mouse_tdtomato/mouse_tdtomato_star 47
 Mouse_tdTomato_WPRE /net/bbi/vol1/data/genomes_stage/mouse_tdtomato_wpre/mouse_tdtomato_wpre_star 47
@@ -28,3 +29,4 @@ Horse	/net/bbi/vol1/data/genomes_stage/horse/horse_star 47
 Corn	/net/bbi/vol1/data/genomes_stage/corn/corn_star  25
 Arabidopsis	/net/bbi/vol1/data/genomes_stage/arabidopsis/arabidopsis_star 10
 Custom_cimino   /net/bbi/vol1/data/genomes_stage/custom_cimino/custom_cimino_star 47
+

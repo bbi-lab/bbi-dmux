@@ -13,9 +13,10 @@ import sys
 import argparse
 import csv
 import re
+import operator
 
 
-
+# Check the LIMS manifest CSV file header.
 def check_header(row):
   if(row[0] != 'name' or
      row[1] != 'experiment' or
@@ -26,6 +27,54 @@ def check_header(row):
      row[6] != 'genome'):
     print('Error: unexpected header token in row: ', row, file=sys.stderr)
     sys.exit(-1)
+
+
+# Read the LIMS manifest CSV file.
+def read_lims_manifest(rows):
+  rows = []
+  with open(infile, newline='') as ifp:
+    reader = csv.reader(ifp, dialect='unix')
+    # Read rows from input file.
+    for irow, row in enumerate(reader):
+      if(irow == 0):
+        check_header(row)
+        continue
+      rows.append(row)
+  return(rows)
+
+
+# Format fields in inrows and store in outrows.
+# Return outrows.
+def format_rows(inrows):
+  pobj1 = re.compile('^P([0-9]+)$')
+  pobj2 = re.compile('^([A-H])([0-9]+)$')
+  outrows = []
+  for inrow in inrows:
+    mobj1 = re.match(pobj1, inrow[2])
+    if(mobj1 == None):
+      print('Error: no match to plate \'%s\'' % (inrow[2]), file=sys.stderr)
+      sys.exit(-1)
+    mobj2 = re.match(pobj2, inrow[3])
+    if(mobj2 == None):
+      print('Error: no match to well \'%s\'' % (inrow[3]), file=sys.stderr)
+      sys.exit(-1)
+#    plate_str  = inrow[2]
+    plate_str  = 'P' + '%d' % (int(mobj1.group(1)))
+    well_str   = '%s%02d' % (mobj2.group(1), int(mobj2.group(2)))
+    sample_str = inrow[4]
+    genome_str = inrow[6]
+    outrow = ['%s%s' % (plate_str, well_str), '%s-%s' % (plate_str, well_str), sample_str, genome_str]
+    outrows.append(outrow)
+  return(outrows)
+
+
+# Write samplesheet CSV file to outfile.
+def write_sample_sheet(outrows, outfile):
+  with open(outfile, 'w+', newline='') as ofp:
+    writer = csv.writer(ofp, dialect='unix', quoting=csv.QUOTE_NONE)
+    writer.writerow(['RT Barcode','Sample ID','Reference Genome'])
+    for outrow in outrows:
+      writer.writerow([outrow[1], outrow[2], outrow[3]])
 
 
 if __name__ == '__main__':
@@ -41,29 +90,15 @@ if __name__ == '__main__':
   print('Input file: %s' % (infile))
   print('Output file: %s' % (outfile))
 
-  pobj = re.compile('^([A-H])([0-9]+)$')
+  # Read input file.
+  inrows = read_lims_manifest(infile)
 
-  ofp = open(outfile, 'w+', newline='')
-  writer = csv.writer(ofp, dialect='unix', quoting=csv.QUOTE_NONE) 
+  # Set up out rows.
+  outrows = format_rows(inrows)
 
-  # Write header
-  writer.writerow(['RT Barcode','Sample ID','Reference Genome'])
+  # Sort rows by key in outrows[i][0]
+  outrows.sort(key=operator.itemgetter(0))
 
-  # Read and write well rows.
-  with open(infile, newline='') as ifp:
-    reader = csv.reader(ifp, dialect='unix')
-    # Read rows from input file.
-    for irow, row in enumerate(reader):
-      if(irow == 0):
-        check_header(row)
-        continue
-      # Convert well A1 to well A01, etc.
-      mobj = re.match(pobj, row[3])
-      if(mobj == None):
-        print('Error: no match to well \'%s\'' % (row[3]), file=sys.stderr)
-        sys.exit(-1)
-#      print('%s-%s%02d,%s,%s' % (row[2], mobj.group(1), int(mobj.group(2)), row[4], row[6]))
-      # Write row to output file.
-      writer.writerow(['%s-%s' % (row[2], mobj.group(1)+'%02d' % int(mobj.group(2))), row[4], row[6]])
+  # Write samplesheet file.
+  write_sample_sheet(outrows, outfile)
 
-  ofp.close()

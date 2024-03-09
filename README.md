@@ -6,12 +6,11 @@ This pipeline is the under-construction pipe for processing 2-level and 3-level 
 The pipeline is run in two parts, the first is [bbi-dmux](https://github.com/bbi-lab/bbi-dmux) which runs the demultiplexing, and the second is [bbi-sci](https://github.com/bbi-lab/bbi-sci/) which completes the preprocessing. The instructions below apply to both pipelines, and both pipelines can use the same configuration file.
 
 ## Prerequisites
-1. This script requires Nextflow version >= 20.07.1.
+1. This script requires Nextflow version >= 20.07.1 and <= 22.10.4.
 
 2. As the Nextflow pipeline is run interactively, please use a terminal multiplexer such as tmux. tmux sessions are persistent which means that programs in tmux will continue to run even if you get disconnected. You can start a tmux session by using:
 
 ```
-module load tmux/2.9a
 tmux
 ```
 
@@ -46,16 +45,10 @@ Omit `-l cpuid_level` when running the pipeline.
 ### modules
 After starting a qlogin session:
 
-First, you need to have python available. You should have version 3.7.7 in order to have nextflow work for you. Please make sure that this is the version you load in your ~/.bashrc file as this is the version that you will use to install the packages below. For example, in your ~/.bashrc file have:
+First, you need to have python available. You should have version 3.12.1 in order to have nextflow work for you. Please make sure that this is the version you load in your ~/.bashrc file as this is the version that you will use to install the packages below. For example, in your ~/.bashrc file have:
 
 ```
-module load python/3.7.7
-```
-
-You must also have a few modules other than python loaded:
-
-```
-module load git/2.18.0
+module load python/3.12.1
 ```
 
 After loading the above modules, you must install the following python packages:
@@ -82,13 +75,9 @@ pypy3 -m pip install Bio --user
 and install monocle3 and garnett by running:
 
 ```
-module load gcc/8.1.0
-module load proj/4.9.3
-module load gdal/2.4.1
-module load pcre2/10.35
-module load R/4.0.0
 R
 ```
+
 Then from within R, follow the installation instructions on the [monocle3 website](https://cole-trapnell-lab.github.io/monocle3/).
 And the instructions for garnett on the [Garnett website](https://cole-trapnell-lab.github.io/garnett/docs_m3/#install-from-github).
 

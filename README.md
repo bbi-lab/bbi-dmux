@@ -72,7 +72,13 @@ module load pypy/3.9-7.3.9
 pypy3 -m pip install Bio --user
 ```
 
-and install monocle3 and garnett by running:
+You may need to update the pypy pip version using the command
+
+```
+pypy -m ensurepip
+```
+
+Install monocle3 and garnett by running:
 
 ```
 R

@@ -65,18 +65,12 @@ python setup.py install --user
 popd
 ```
 
-Then, install the required pypy3 packages by running the script
+Then, build the pypy3 virtual environment by running the script
 
 ```
-module load pypy/3.9-7.3.9
-pypy3 -m pip install Bio --user
+bash create_virtual_envs.sh
 ```
-
-You may need to update the pypy pip version using the command
-
-```
-pypy -m ensurepip
-```
+in the bbi-dmux directory. The environment may need to be built on a node with the CPU architecture on which you will run the scripts. There are additional details in the create_virtual_envs.sh script.
 
 Install monocle3 and garnett by running:
 
@@ -97,11 +91,8 @@ python setup.py install --user
 popd
 ```
 
-Please note: If you are doing a hashing experiment, you will also need to install scipy in order to run the pipeline successfully. You can do this by running:
+Please note: If you are doing a hashing experiment, you will also need scipy; however, it is installed already in python 3.12.1.
 
-```
-pip install --user scipy
-```
 
 Once monocle3 and scrublet are installed, install nextflow by typing:
 

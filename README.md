@@ -76,7 +76,7 @@ Then from within R, follow the installation instructions for the following R pac
 - Monocle3: [monocle3 website](https://cole-trapnell-lab.github.io/monocle3/)
 - Garnett: [Garnett website](https://cole-trapnell-lab.github.io/garnett/docs_m3/#install-from-github)
 - DropletUtils: [DropletUtils website](https://bioconductor.org/packages/release/bioc/html/DropletUtils.html)
-- randomColoR: Run ```install.packages("randomcoloR")
+- randomColoR: Run ```install.packages("randomcoloR")```
 
 
 Please note: If you are doing a hashing experiment, you need scipy, which is installed already in python 3.12.1.

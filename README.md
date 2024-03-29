@@ -6,12 +6,11 @@ This pipeline is the under-construction pipe for processing 2-level and 3-level 
 The pipeline is run in two parts, the first is [bbi-dmux](https://github.com/bbi-lab/bbi-dmux) which runs the demultiplexing, and the second is [bbi-sci](https://github.com/bbi-lab/bbi-sci/) which completes the preprocessing. The instructions below apply to both pipelines, and both pipelines can use the same configuration file.
 
 ## Prerequisites
-1. This script requires Nextflow version >= 20.07.1.
+1. This script requires Nextflow version >= 20.07.1 and <= 22.10.4.
 
-2. As the Nextflow pipeline is run interactively, please use a terminal multiplexer such as tmux. tmux sessions are persistent which means that programs in tmux will continue to run even if you get disconnected. You can start a tmux session by using:
+2. As the Nextflow pipeline is run interactively, please use a terminal multiplexer such as tmux. tmux sessions are persistent which means that programs in tmux will continue to run even if you get disconnected. You can start a tmux session using the command:
 
 ```
-module load tmux/2.9a
 tmux
 ```
 
@@ -32,8 +31,7 @@ qlogin -l mfree=16G
 ## Installation
 
 
-If you install the pipeline on a cluster with a mix of CPU architectures,
-then when you qlogin to the cluster for the installation procedure,
+If you install the pipeline on a cluster with a mix of CPU architectures, when you qlogin to the cluster for the installation procedure,
 request a node with the minimum CPU ID level on which you intend to run the pipeline.
 For example, on the Shendure lab cluster use
 
@@ -43,19 +41,13 @@ qlogin -l mfree=20G -l cpuid_level=11
 
 Omit `-l cpuid_level` when running the pipeline.
 
-### modules
+### Modules
 After starting a qlogin session:
 
-First, you need to have python available. You should have version 3.7.7 in order to have nextflow work for you. Please make sure that this is the version you load in your ~/.bashrc file as this is the version that you will use to install the packages below. For example, in your ~/.bashrc file have:
+First, you need to have python available. You should have version 3.12.1 in order to have nextflow work for you. Please make sure that this is the version you load in your ~/.bashrc file as this is the version that you will use to install the packages below. For example, in your ~/.bashrc file have:
 
 ```
-module load python/3.7.7
-```
-
-You must also have a few modules other than python loaded:
-
-```
-module load git/2.18.0
+module load python/3.12.1
 ```
 
 After loading the above modules, you must install the following python packages:
@@ -65,6 +57,7 @@ pip install --user biopython
 pip install --user fmt
 pip install --user pysam
 pip install --user matplotlib
+pip install --user scrublet
 
 git clone https://github.com/andrewhill157/barcodeutils.git
 pushd barcodeutils
@@ -72,41 +65,22 @@ python setup.py install --user
 popd
 ```
 
-Then, install the required pypy3 packages by running the script
+Install monocle3, garnett, DropletUtils, and randomColoR by loading the R/4.3.2 module and running R:
 
 ```
-module load pypy/3.9-7.3.9
-pypy3 -m pip install Bio --user
-```
-
-and install monocle3 and garnett by running:
-
-```
-module load gcc/8.1.0
-module load proj/4.9.3
-module load gdal/2.4.1
-module load pcre2/10.35
-module load R/4.0.0
+module load R/4.3.2
 R
 ```
-Then from within R, follow the installation instructions on the [monocle3 website](https://cole-trapnell-lab.github.io/monocle3/).
-And the instructions for garnett on the [Garnett website](https://cole-trapnell-lab.github.io/garnett/docs_m3/#install-from-github).
 
-You will also require scrublet, a tool used to detect doublets in single-cell RNA-seq data. You can install it from source by running:
+Then from within R, follow the installation instructions for the following R packages:
+- Monocle3: [monocle3 website](https://cole-trapnell-lab.github.io/monocle3/)
+- Garnett: [Garnett website](https://cole-trapnell-lab.github.io/garnett/docs_m3/#install-from-github)
+- DropletUtils: [DropletUtils website](https://bioconductor.org/packages/release/bioc/html/DropletUtils.html)
+- randomColoR: Run ```install.packages("randomcoloR")```
 
-```
-git clone https://github.com/AllonKleinLab/scrublet.git
-pushd scrublet
-pip install -r requirements.txt --user
-python setup.py install --user
-popd
-```
 
-Please note: If you are doing a hashing experiment, you will also need to install scipy in order to run the pipeline successfully. You can do this by running:
+Please note: If you are doing a hashing experiment, you need scipy, which is installed already in python 3.12.1.
 
-```
-pip install --user scipy
-```
 
 Once monocle3 and scrublet are installed, install nextflow by typing:
 
@@ -116,7 +90,7 @@ curl -s https://get.nextflow.io | bash
 You probably also want to add Nextflow to your path so you can access it from anywhere. Do this by adding the following to your .bashrc file (located in your home directory).
 
 ```
-export PATH=/path/to/whereever/you/downloaded/:$PATH
+export PATH=/path/to/where/you/installed/nextflow/:$PATH
 ```
 
 Next, pull the pipeline to make sure you're on the latest version
@@ -126,7 +100,17 @@ nextflow pull bbi-lab/bbi-dmux
 nextflow pull bbi-lab/bbi-sci
 ```
 
-Check that it all worked by running:
+Build the pypy3 virtual environment required for the bbi-dmux pipeline. Do this in the directory ~/.nextflow/assets/bbi-lab/bbi-dmux using the commands
+
+```
+pushd ~/.nextflow/assets/bbi-lab/bbi-dmux
+bash create_virtual_envs.sh
+popd
+```
+
+The environment may need to be built on a node with the CPU architecture on which you will run the scripts. There are additional details in the create_virtual_envs.sh script.
+
+Check that it works by running:
 
 ```
 nextflow run bbi-dmux --help
@@ -134,6 +118,33 @@ nextflow run bbi-sci --help
 ```
 
 You should get some help info printed.
+
+Alternatively, you can install and run the pipeline from clones of the Github repositories, for example,
+
+```
+mkdir ~/git
+cd ~/git
+git clone https://github.com/bbi-lab/bbi-dmux
+git clone https://github.com/bbi-lab/bbi-sci
+cd bbi-dmux
+bash create_virtual_envs.sh
+```
+
+In this case, you run the pipelines using the commands
+
+```
+nextflow run ~/git/bbi-dmux/main.nf -profile ubuntu_22_04 -c experiment.config
+nextflow run ~/git/bbi-sci/main.nf -profile ubuntu_22_04 -c experiment.config
+```
+
+There are bash scripts at
+
+```
+~/git/bbi-dmux/scripts/run.scirna-demux.sh
+~/git/bbi-dmux/scripts/run.scirna-analyze.sh
+```
+
+that you can edit and use to run the pipelines.
 
 ## Running the pipeline
 
@@ -144,10 +155,10 @@ The sample sheet should be a csv with 3 columns: RT Barcode, Sample ID, and Refe
 
 ```
 RT Barcode,Sample ID,Reference Genome
-2P09-A01,Sample1,Mouse
-2P09-A02,Sample1,Mouse
-2P09-A03,Sample2,Human
-2P09-A04,Sample2,Human
+2P9-A01,Sample1,Mouse
+2P9-A02,Sample1,Mouse
+2P9-A03,Sample2,Human
+2P9-A04,Sample2,Human
 ```
 
 #### Configuration file:
@@ -165,11 +176,10 @@ Notes:
 
 ##### *nextflow.config* file
 
-The *nextflow.config* file defines processing values such as the required modules, memory, and number of CPUs for each processing stage, which do not change typically from run-to-run. The file can be left in the bbi-\* installation directory where Nextflow searches for it automatically when the pipeline starts up. The supplied *nextflow.config* file has two profiles: the default profile, called *standard*, defines modules used by the pipeline on CentOS 7 systems in the UW Genome Sciences cluster, and the *centos_6* profile, which defines modules used by the pipeline on CentOS 6 systems in the UW Genome Sciences cluster. In order to run the pipelines with the *centos_6* profile, add the command line parameter `-profile centos_6` to the nextflow run command, for example
-
+The *nextflow.config* file defines processing values such as the required modules, memory, and number of CPUs for each processing stage, which do not change typically from run-to-run. The file can be left in the bbi-\* installation directory where Nextflow searches for it automatically when the pipeline starts up. The supplied *nextflow.config* file has two profiles: the default profile, called *standard*, defines modules used by the pipeline on CentOS 7 systems in the UW Genome Sciences cluster, and the *ubuntu_22_04* profile, which defines modules used by the pipeline on Ubuntu 22.04 systems in the UW Genome Sciences cluster. In order to run the pipelines with the *ubuntu_22_04* profile, add the command line parameter `-profile ubuntu_22_04` to the nextflow run command, for example
 
 ```
-nextflow run bbi-dmux -profile centos_6 -c experiment.config
+nextflow run bbi-dmux -profile ubuntu_22_04 -c experiment.config
 ```
 
 This *nextflow.config* file has comments that give additional information.
@@ -189,7 +199,7 @@ nextflow run bbi-sci -c experiment.config
 ```
 
 
-For either piece of the pipeline, if there is an error, you can continue the pipeline where it left off with either
+For either piece of the pipelines, if there is an error, you can continue the pipeline where it left off with either
 
 ```
 nextflow run bbi-dmux -c experiment.config -resume
@@ -237,4 +247,4 @@ use this new file as your samplesheet.
 If you run into problems, please leave a detailed description in the issue tab above!
 
 ### Acknowledgements
-Many members of the Shendure and Trapnell labs as well as the BBI team have worked on portions of this pipeline or its predecessors, especially Andrew Hill and Jonathan Packer.
+Many members of the Shendure and Trapnell labs as well as the BBI team have worked on portions of this pipeline or its predecessors, especially Andrew Hill and Jonathan Packer. Many thanks to them!

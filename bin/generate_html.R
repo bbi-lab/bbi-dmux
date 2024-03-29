@@ -116,49 +116,56 @@ for (lane in lane_list) {
     }
     
     if (!is.null(sent_norm)) {
-      png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate_sent_norm.png"), width = 6, height = 4, res = 200, units = "in")
-      print(ggplot(aes(as.factor(Var1), Var2, fill = log2(ReadCount/sent_norm)), data = data) +
-              geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
-              scale_fill_gradient2(name = "log2 norm value", low = "red", mid="white", high = "blue"))
-      dev.off()
+      # png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate_sent_norm.png"), width = 6, height = 4, res = 200, units = "in")
+      ggp_obj <- ggplot(aes(as.factor(Var1), Var2, fill = log2(ReadCount/sent_norm)), data = data) +
+                        geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
+                        scale_fill_gradient2(name = "log2 norm value", low = "red", mid="white", high = "blue")
+      file_name <- paste0("demux_dash/img/", lane, "_", p, ".rt_plate_sent_norm.png")
+      ggsave(filename=file_name, ggp_obj, device='png', width=6, height=4, dpi=200, units='in')
       
       sent_norm_pics <- c(sent_norm_pics, paste0("demux_dash/img/", lane, "_", p, ".rt_plate_sent_norm.png"))
       include_norm <- "true"
     } else {
-      png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate_sent_norm.png"), width = 5.5, height = 4, res = 200, units = "in")
-      print(ggplot(aes(as.factor(Var1), Var2), data = data) +
-              geom_point(shape=21, size = 10) + geom_text(aes(x = 6.5, y = "D", label = "No Sentinel detected for this plate")) +
-              theme_bw() + labs(x = "", y = "") )
-      dev.off()
+      # png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate_sent_norm.png"), width = 5.5, height = 4, res = 200, units = "in")
+      ggp_obj <- ggplot(aes(as.factor(Var1), Var2), data = data) +
+                        geom_point(shape=21, size = 10) + geom_text(aes(x = 6.5, y = "D", label = "No Sentinel detected for this plate")) +
+                        theme_bw() + labs(x = "", y = "")
+
+      file_name <- paste0("demux_dash/img/", lane, "_", p, ".rt_plate_sent_norm.png")
+      ggsave(filename=file_name, ggp_obj, device='png', width=5.5, height=4, dpi=200, units='in')
       
       sent_norm_pics <- c(sent_norm_pics, paste0("demux_dash/img/", lane, "_", p, ".rt_plate_sent_norm.png"))
     }
     
     
     if (!is.null(barn_norm)) {
-      png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate_barn_norm.png"), width = 6, height = 4, res = 200, units = "in")
-      print(ggplot(aes(as.factor(Var1), Var2, fill = log2(ReadCount/barn_norm)), data = data) +
-              geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
-              scale_fill_gradient2(name = "log2 norm value", low = "red", mid="white", high = "blue"))
-      dev.off()
+      # png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate_barn_norm.png"), width = 6, height = 4, res = 200, units = "in")
+      ggp_obj <- ggplot(aes(as.factor(Var1), Var2, fill = log2(ReadCount/barn_norm)), data = data) +
+                        geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
+                        scale_fill_gradient2(name = "log2 norm value", low = "red", mid="white", high = "blue")
+      file_name <- paste0("demux_dash/img/", lane, "_", p, ".rt_plate_barn_norm.png")
+      ggsave(filename=file_name, ggp_obj, device='png', width=6, height=4, dpi=200, units='in')
+
       barn_norm_pics <- c(barn_norm_pics, paste0("demux_dash/img/", lane, "_", p, ".rt_plate_barn_norm.png"))
       include_norm <- "true"
     } else {
-      png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate_barn_norm.png"), width = 5.5, height = 4, res = 200, units = "in")
-      print(ggplot(aes(as.factor(Var1), Var2), data = data) +
-              geom_point(shape=21, size = 10) + geom_text(aes(x = 6.5, y = "D", label = "No barnyard detected for this plate")) +
-              theme_bw() + labs(x = "", y = "") )
-      dev.off()
+      # png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate_barn_norm.png"), width = 5.5, height = 4, res = 200, units = "in")
+      ggp_obj <- ggplot(aes(as.factor(Var1), Var2), data = data) +
+                        geom_point(shape=21, size = 10) + geom_text(aes(x = 6.5, y = "D", label = "No barnyard detected for this plate")) +
+                        theme_bw() + labs(x = "", y = "")
+      file_name <- paste0("demux_dash/img/", lane, "_", p, ".rt_plate_barn_norm.png")
+      ggsave(filename=file_name, ggp_obj, device='png', width=5.5, height=4, dpi=200, units='in')
       
       barn_norm_pics <- c(barn_norm_pics, paste0("demux_dash/img/", lane, "_", p, ".rt_plate_barn_norm.png"))
       
     }
     
-    png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate.png"), width = 6, height = 4, res = 200, units = "in")
-    print(ggplot(aes(as.factor(Var1), Var2, fill = ReadCount), data = data) +
-            geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
-            scale_fill_gradient(low = "white", high = "blue"))
-    dev.off()
+    # png(file = paste0("demux_dash/img/", lane, "_", p, ".rt_plate.png"), width = 6, height = 4, res = 200, units = "in")
+    ggp_obj <- ggplot(aes(as.factor(Var1), Var2, fill = ReadCount), data = data) +
+                      geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
+                      scale_fill_gradient(low = "white", high = "blue")
+      file_name <- paste0("demux_dash/img/", lane, "_", p, ".rt_plate.png")
+      ggsave(filename=file_name, ggp_obj, device='png', width=6, height=4, dpi=200, units='in')
   }
   
   if(args$level == "3") {
@@ -185,11 +192,12 @@ for (lane in lane_list) {
                     by.y=c("cols", "rows"), all.x=T)
       data$ReadCount[is.na(data$ReadCount)] <- 0
       
-      png(file = paste0("demux_dash/img/", lane, "_", p, ".lig_plate.png"), width = 6, height = 4, res = 200, units = "in")
-      print(ggplot(aes(as.factor(Var1), Var2, fill = ReadCount), data = data) +
-              geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
-              scale_fill_gradient(low = "white", high = "blue"))
-      dev.off()
+      # png(file = paste0("demux_dash/img/", lane, "_", p, ".lig_plate.png"), width = 6, height = 4, res = 200, units = "in")
+      ggp_obj <- ggplot(aes(as.factor(Var1), Var2, fill = ReadCount), data = data) +
+                        geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
+                        scale_fill_gradient(low = "white", high = "blue")
+      file_name <- paste0("demux_dash/img/", lane, "_", p, ".lig_plate.png")
+      ggsave(filename=file_name, ggp_obj, device='png', width=6, height=4, dpi=200, units='in')
     }
   }
   if (nrow(bad_well) > 0) {
@@ -232,13 +240,14 @@ for (lane in lane_list) {
     
     data$outlier <- data$ReadCount < 0.01 * median(data$ReadCount)
     pcr_plate_list <- c(pcr_plate_list, paste0(rel_barc))
-    png(file = paste0("demux_dash/img/", lane,"_",rel_barc, ".pcr_plate.png"), width = 6, height = 4, res = 200, units = "in")
-    print(ggplot(aes(as.factor(Var1), Var2, fill = ReadCount, color=outlier, stroke=outlier), data = data) +
-            geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
-            scale_fill_gradient(low = "white", high = "blue") + scale_color_manual(values=c("black", "red"), guide=FALSE) +
-            scale_discrete_manual(aesthetics = "stroke", values = c(0.5,1), guide=FALSE
-            ))
-    dev.off()
+    # png(file = paste0("demux_dash/img/", lane,"_",rel_barc, ".pcr_plate.png"), width = 6, height = 4, res = 200, units = "in")
+    ggp_obj <- ggplot(aes(as.factor(Var1), Var2, fill = ReadCount, color=outlier, stroke=outlier), data = data) +
+                      geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
+                      scale_fill_gradient(low = "white", high = "blue") + scale_color_manual(values=c("black", "red"), guide=FALSE) +
+                      scale_discrete_manual(aesthetics = "stroke", values = c(0.5,1), guide=FALSE)
+      file_name <- paste0("demux_dash/img/", lane,"_",rel_barc, ".pcr_plate.png")
+      ggsave(filename=file_name, ggp_obj, device='png', width=6, height=4, dpi=200, units='in')
+
     well_df_lane <- data.frame()
   } else if (!well_wise) {
     pcr_plate_list <- c()
@@ -252,13 +261,14 @@ for (lane in lane_list) {
       
       data$outlier <- data$ReadCount < 0.01 * median(data$ReadCount)
       pcr_plate_list <- c(pcr_plate_list, paste0(p7_rows[i], p5_cols[i]))
-      png(file = paste0("demux_dash/img/", lane,"_", p7_rows[i], p5_cols[i], ".pcr_plate.png"), width = 6, height = 4, res = 200, units = "in")
-      print(ggplot(aes(as.factor(Var1), Var2, fill = ReadCount, color=outlier, stroke=outlier), data = data) +
-              geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
-              scale_fill_gradient(low = "white", high = "blue") + scale_color_manual(values=c("black", "red"), guide=FALSE) +
-              scale_discrete_manual(aesthetics = "stroke", values = c(0.5,1), guide=FALSE
-              ))
-      dev.off()
+      # png(file = paste0("demux_dash/img/", lane,"_", p7_rows[i], p5_cols[i], ".pcr_plate.png"), width = 6, height = 4, res = 200, units = "in")
+      ggp_obj <- ggplot(aes(as.factor(Var1), Var2, fill = ReadCount, color=outlier, stroke=outlier), data = data) +
+                        geom_point(shape=21, size = 10) + theme_bw() + labs(x = "", y = "") +
+                        scale_fill_gradient(low = "white", high = "blue") + scale_color_manual(values=c("black", "red"), guide=FALSE) +
+                        scale_discrete_manual(aesthetics = "stroke", values = c(0.5,1), guide=FALSE)
+      file_name <- paste0("demux_dash/img/", lane,"_", p7_rows[i], p5_cols[i], ".pcr_plate.png")
+      ggsave(filename=file_name, ggp_obj, device='png', width=6, height=4, dpi=200, units='in')
+
       well_df_lane <- data.frame()
     }
     

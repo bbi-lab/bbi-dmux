@@ -65,7 +65,7 @@ def format_rows(inrows):
 #    plate_str              = inrow[2]
     plate_str              = 'P' + '%d' % (int(mobj1.group(1)))
     well_str               = '%s%02d' % (mobj2.group(1), int(mobj2.group(2)))
-    sample_str             = inrow[4]
+    sample_str             = str(inrow[4])
     investigator_sample_id = inrow[5]
     tstr                   = inrow[6].split(':')
     if(len(tstr) > 2):

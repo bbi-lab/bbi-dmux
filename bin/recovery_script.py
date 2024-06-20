@@ -105,6 +105,8 @@ def make_undetermined_dict_3lvl(read_file, out_file):
     not_in_samp_dict = dict()
     read_result = []
     pcr_combo_dict = dict()
+    p5_bad_pcr_dict = dict()
+    p7_bad_pcr_dict = dict()
     fo = open(out_file, "w")
     fo.write("read_type\trt_9_result\trt_9_value\trt_10_result\trt_10_value\tsample_assign_9\tsample_assign_10\tlig_9_result\tlig_9_value\tlig_10_result\tlig_10_value\tp5_result\tp7_result\tumi_9_value\tumi_10_value\tpcr_result\tread_name\n")
     sum_dict = {'total_reads':0, 'amb_length':0, 'multi_wrong':0, 'bad_lig':0, 'bad_rt':0, 'pcr_mismatch':0, 'bad_pcr_comp':0, 'not_in_samp':0, 'unassigned':0}
@@ -209,6 +211,12 @@ def make_undetermined_dict_3lvl(read_file, out_file):
             else:
                 read_res["p5_result"] = "Bad p5"
                 read_res["pcr_result"] = "Bad component"
+
+                if not (p5) in p5_bad_pcr_dict:
+                    p5_bad_pcr_dict[p5] = 1
+                else:
+                    p5_bad_pcr_dict[p5] += 1
+ 
             if p7 in p7_whitelist[0] or p7 in p7_whitelist[1]:
                 read_res["p7_result"] = "OK"
                 if p7 in p7_whitelist[1]:
@@ -217,6 +225,12 @@ def make_undetermined_dict_3lvl(read_file, out_file):
             else:
                 read_res["p7_result"] = "Bad p7"
                 read_res["pcr_result"] = "Bad component"
+
+                if not (p7) in p7_bad_pcr_dict:
+                    p7_bad_pcr_dict[p7] = 1
+                else:
+                    p7_bad_pcr_dict[p7] += 1
+
             if not read_res["pcr_result"] == "Bad component":
                 if not (p5, p7) in programmed_pcr_combos:
                     read_res["pcr_result"] = "Barcode mismatch"
@@ -336,6 +350,16 @@ def make_undetermined_dict_3lvl(read_file, out_file):
     sf.write("\n\nThe top bad pcr combos are:\n")
     sorted_pcr = sorted(pcr_combo_dict.items(), key=operator.itemgetter(1), reverse=True)
     for item in sorted_pcr[:20]:
+        sf.write('{}    {}\n'.format(item[0],item[1]))
+
+    sf.write("\n\nThe top p5 bad pcr components are:\n")
+    sorted_p5_bad_pcr = sorted(p5_bad_pcr_dict.items(), key=operator.itemgetter(1), reverse=True)
+    for item in sorted_p5_bad_pcr[:20]:
+        sf.write('{}    {}\n'.format(item[0],item[1]))
+
+    sf.write("\n\nThe top p7 bad pcr components are:\n")
+    sorted_p7_bad_pcr = sorted(p7_bad_pcr_dict.items(), key=operator.itemgetter(1), reverse=True)
+    for item in sorted_p7_bad_pcr[:20]:
         sf.write('{}    {}\n'.format(item[0],item[1]))
 
     sf.close()

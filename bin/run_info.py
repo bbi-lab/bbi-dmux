@@ -22,7 +22,9 @@ import xml.etree.ElementTree as ET
 import glob
 import gzip
 import re
-
+from collections import OrderedDict
+from typing import Union
+from xml.etree.ElementTree import ElementTree, Element
 
 #
 # **  application_name identifiers **
@@ -53,6 +55,7 @@ import re
 #        X Ten - 8 lane cells
 #        NovaSeq S1, S2 - 2 lanes flowcells
 #        NovaSeq S3, S4 - 4 lanes flowcells
+#        NovaSeqX use SampleTube ConsumableInfo to determine number of lanes (I don't know whether this is definitive.)
 #      note: the NextSeq and NovaSeq have 'fluidically' one lane; except for
 #            NovaSeq XP protocol, which allows for distinct samples on lanes
 #   o  few run_status values are required by the
@@ -65,30 +68,16 @@ import re
 #      files.
 
 
-version = '20210819.1'
+version = '20240530.1'
 
 
 application_name_dict = {
     'NextSeq Control': 'NextSeq500',
     'NextSeq 1000/2000': 'NextSeq2000',
     'MiSeq': 'MiSeq',
+    'NovaSeqXSeries': 'NovaSeqX',
     'NovaSeq': 'NovaSeq',
     'HiSeq': 'HiSeq' }
-
-
-#
-# This dictionary is no longer used.
-#
-# Is the p5 index reverse complemented?
-#
-# SEQUENCERS_P5_RC_MAP = {
-#     'NextSeq500': True,
-#     'NextSeq2000': True,
-#     'MiSeq': False,
-#     'NovaSeq': False,
-#     'HiSeq3000': False,
-#     'HiSeq4000': True
-# }
 
 
 def open_file(f, mode='rt'):
@@ -96,6 +85,22 @@ def open_file(f, mode='rt'):
         return gzip.open(f, mode)
     else:
         return open(f, mode)
+
+#
+# Convert etree to dictionary.
+# This is unused at this time but it may be useful
+# in the future.
+#
+def etree_to_dict(root: Union[ElementTree, Element], include_root_tag=False):
+    root = root.getroot() if isinstance(root, ElementTree) else root
+    result = OrderedDict()
+    if len(root) > 1 and len({child.tag for child in root}) == 1:
+        result[next(iter(root)).tag] = [etree_to_dict(child) for child in root]
+    else:
+        for child in root:
+            result[child.tag] = etree_to_dict(child) if len(list(child)) > 0 else (child.text or "")
+    result.update(('@' + k, v) for k, v in root.attrib.items())
+    return {root.tag: result} if include_root_tag else result
 
 
 def get_application_info( tree ):
@@ -107,16 +112,21 @@ def get_application_info( tree ):
       instrument_model: string with instrument name (known names are in re_models below)'
       application_version: string with run application version
     """
+
+    # Search for an <ApplicationName> tag.
     application_name = None
     # most machines store the machine name string in the tag 'ApplicationName'
     for application_name in tree.getroot().iter( 'ApplicationName' ):
         application_name = application_name.text
         break
+
     # NovaSeq stores the machine name string in the tag 'Application'
+    # so search for <Application> if application_name is None.
     if( application_name == None ):
         for application_name in tree.getroot().iter( 'Application' ):
             application_name = application_name.text
             break
+
     if( application_name == None ):
         raise ValueError( 'Unable to find Application* element in BCL RunParameters.xml' )
 
@@ -124,6 +134,13 @@ def get_application_info( tree ):
     for application_version in tree.getroot().iter( 'ApplicationVersion' ):
         application_version = application_version.text
         break
+
+    # NovaSeqX stores the application version in the tag SystemSuiteVersion
+    if( application_version == None ):
+       for application_version in tree.getroot().iter( 'SystemSuiteVersion' ):
+           application_version = application_version.text
+           break
+
     if( application_version == None ):
         raise ValueError( 'ApplicationVersion element missing in BCL RunParameters.xml' )
 
@@ -174,15 +191,14 @@ def get_run_info( flow_cell_path, pipeline_type='RNA-seq' ):
         run_stats = get_run_info_nextseq2000( instrument_model, application_version, tree )
     elif( instrument_model == 'MiSeq' ):
         run_stats = get_run_info_miseq( instrument_model, application_version, tree )
+    elif( instrument_model == 'NovaSeqX' ):
+        run_stats = get_run_info_novaseqX( instrument_model, application_version, tree, pipeline_type )
     elif( instrument_model == 'NovaSeq' ):
         run_stats = get_run_info_novaseq( instrument_model, application_version, tree, pipeline_type )
     elif( instrument_model == 'HiSeq3000' or instrument_model == 'HiSeq4000' ):
         run_stats = get_run_info_hiseq( instrument_model, application_version, tree )
     else:
         run_stats['instrument_type'] = 'unknown'
-
-    # reverse_complement_i5 is used in fastq sequence demultiplexing
-#     run_stats['reverse_complement_i5'] = reverse_complement_i5( run_stats['instrument_type'] )
 
     return( run_stats )
 
@@ -205,6 +221,8 @@ def get_run_info_nextseq500( instrument_model, application_version, tree ):
     flowcell_node = tree.getroot().find("FlowCellRfidTag")
 
     # Now actually populate various stats
+    run_stats['instrument_type'] = instrument_model
+    run_stats['application_version'] = application_version
     run_stats['flow_cell_id'] = flowcell_node.find('SerialNumber').text
     run_stats['date'] = tree.getroot().find('RunStartDate').text
     run_stats['instrument'] = tree.getroot().find('InstrumentID').text
@@ -220,7 +238,6 @@ def get_run_info_nextseq500( instrument_model, application_version, tree ):
     else:
         run_stats['paired_end'] = False
 
-    run_stats['instrument_type'] = instrument_model
     run_stats['reverse_complement_i5'] = True
 
     return run_stats
@@ -244,6 +261,8 @@ def get_run_info_nextseq2000( instrument_model, application_version, tree ):
     completed_cycles = tree.getroot().find('CompletedCycles')
 
     # Now actually populate various stats
+    run_stats['instrument_type'] = instrument_model
+    run_stats['application_version'] = application_version
     run_stats['flow_cell_id'] = setup_node.find('FlowCellSerialNumber').text
     run_stats['date'] = setup_node.find('RunStartTime').text
     run_stats['instrument'] = setup_node.find('InstrumentSerialNumber').text
@@ -262,7 +281,6 @@ def get_run_info_nextseq2000( instrument_model, application_version, tree ):
     else:
         run_stats['paired_end'] = False
 
-    run_stats['instrument_type'] = instrument_model
     run_stats['reverse_complement_i5'] = True
 
     return run_stats
@@ -287,6 +305,8 @@ def get_run_info_miseq( instrument_model, application_version, tree ):
     reads_node = tree.getroot().find('Reads')
 
     # Now actually populate various stats
+    run_stats['instrument_type'] = instrument_model
+    run_stats['application_version'] = application_version
     run_stats['flow_cell_id'] = flowcell_node.find('SerialNumber').text
     run_stats['date'] = tree.getroot().find('RunStartDate').text
     run_stats['instrument'] = tree.getroot().find('ScannerID').text
@@ -311,7 +331,6 @@ def get_run_info_miseq( instrument_model, application_version, tree ):
       run_stats['p5_index_length'] = index_len[1]
       run_stats['paired_end'] = True
 
-    run_stats['instrument_type'] = instrument_model
     run_stats['reverse_complement_i5'] = False
 
     return run_stats
@@ -336,6 +355,8 @@ def get_run_info_novaseq( instrument_model, application_version, tree, pipeline_
     run_start_date_node = tree.getroot().find('RunStartDate')
 
     # Now actually populate various stats
+    run_stats['instrument_type'] = instrument_model
+    run_stats['application_version'] = application_version
     run_stats['flow_cell_id'] = flowcell_node.find('FlowCellSerialBarcode').text
     run_stats['date'] = run_start_date_node.text
     run_stats['instrument'] = instrument_id_node.text
@@ -361,8 +382,6 @@ def get_run_info_novaseq( instrument_model, application_version, tree, pipeline_
 
     application = setup_node.find('Application').text
     application_version = setup_node.find('ApplicationVersion').text
-
-    run_stats['instrument_type'] = instrument_model
 
     # Notes:
     #   o  NovaSeq application 1.7.0 can run reagent kit version 1.0 and 1.5
@@ -394,8 +413,90 @@ def get_run_info_novaseq( instrument_model, application_version, tree, pipeline_
               run_stats['reverse_complement_i5'] = False
             else:
               raise ValueError('Unrecognized pipeline_type value \'%s\'' % ( pipeline_type ))
+    elif( application_version == '1.8.0' or application_version == '1.8.1'):
+        if( pipeline_type == 'RNA-seq' ):
+            run_stats['reverse_complement_i5'] = True
+        elif( pipeline_type == 'ATAC-seq' ):
+            run_stats['reverse_complement_i5'] = False
+        else:
+            raise ValueError('Unrecognized pipeline_type value \'%s\'' % ( pipeline_type ))
     else:
+        if( pipeline_type == 'RNA-seq' ):
+            run_stats['reverse_complement_i5'] = True
+        elif( pipeline_type == 'ATAC-seq' ):
+            run_stats['reverse_complement_i5'] = False
+        else:
+            raise ValueError('Unrecognized pipeline_type value \'%s\'' % ( pipeline_type ))
+
+    return run_stats
+
+
+def get_run_info_novaseqX( instrument_model, application_version, tree, pipeline_type ):
+    """
+    Helper function to get some info about the sequencing runs.
+    Args:
+        tree: xml tree
+    Returns:
+        dict: basic statistics about run, like date, instrument, number of lanes, flowcell ID, read lengths, etc.
+    """
+    run_stats = {}
+
+    run_id_node = tree.getroot().find('RunId')
+    instrument_id_node = tree.getroot().find('InstrumentSerialNumber')
+
+    # Gather ConsumableInfo nodes.
+    for consumable_info_outer in tree.getroot().iter('ConsumableInfo'):
+        for consumable_info_inner in consumable_info_outer:
+            for consumable_element in consumable_info_inner.iter():
+                if(len(consumable_element) == 0):
+                    continue
+                if(consumable_element.find('Type').text == 'Buffer'):
+                    consumable_element_buffer = consumable_element
+                elif(consumable_element.find('Type').text == 'SampleTube'):
+                    consumable_element_sample_tube = consumable_element
+                elif(consumable_element.find('Type').text == 'Lyo'):
+                    consumable_element_sample_lyo = consumable_element
+                elif(consumable_element.find('Type').text == 'Reagent'):
+                    consumable_element_sample_reagent = consumable_element
+                elif(consumable_element.find('Type').text == 'FlowCell'):
+                    consumable_element_sample_flowcell = consumable_element
+
+    flowcell_node = consumable_element_sample_flowcell.find('SerialNumber').text
+
+    # Now actually populate various stats
+    run_stats['instrument_type'] = instrument_model
+    run_stats['application_version'] = application_version
+    run_stats['flow_cell_id'] = consumable_element_sample_flowcell.find('SerialNumber').text
+    run_stats['date'] = run_id_node.text.split('_')[0]
+    run_stats['instrument'] = instrument_id_node.text
+    run_stats['flow_cell_mode'] = consumable_element_sample_flowcell.find('Mode').text
+    run_stats['lanes'] = int(consumable_element_sample_tube.find('Name').text.split(' ')[0])
+
+    run_stats['run_id'] = run_id_node.text
+
+    run_stats['r1_length'] = None
+    run_stats['r2_length'] = None
+    run_stats['p7_index_length'] = None
+    run_stats['p5_index_length'] = None
+    run_stats['paired_end'] = False
+    planned_reads_node = tree.getroot().find('PlannedReads')
+    for read_node in planned_reads_node.iter('Read'):
+        if(read_node.attrib['ReadName'] == 'Read1'):
+            run_stats['r1_length'] = int(read_node.attrib['Cycles'])
+        elif(read_node.attrib['ReadName'] == 'Read2'):
+            run_stats['r2_length'] = int(read_node.attrib['Cycles'])
+            run_stats['paired_end'] = True
+        elif(read_node.attrib['ReadName'] == 'Index1'):
+            run_stats['p7_index_length'] = int(read_node.attrib['Cycles'])
+        elif(read_node.attrib['ReadName'] == 'Index2'):
+            run_stats['p5_index_length'] = int(read_node.attrib['Cycles'])
+
+    if( pipeline_type == 'RNA-seq' ):
+        run_stats['reverse_complement_i5'] = True
+    elif( pipeline_type == 'ATAC-seq' ):
         run_stats['reverse_complement_i5'] = False
+    else:
+        raise ValueError('Unrecognized pipeline_type value \'%s\'' % ( pipeline_type ))
 
     return run_stats
 
@@ -417,6 +518,8 @@ def get_run_info_hiseq( instrument_model, application_version, tree ):
     run_id = setup_node.find('RunID').text
 
     # Now actually populate various stats
+    run_stats['instrument_type'] = instrument_model
+    run_stats['application_version'] = application_version
     run_stats['flow_cell_id'] = run_id.split('_')[3]
     run_stats['date'] = setup_node.find('RunStartDate').text
     run_stats['instrument'] = setup_node.find('ScannerID').text
@@ -433,7 +536,6 @@ def get_run_info_hiseq( instrument_model, application_version, tree ):
     else:
         run_stats['paired_end'] = False
 
-    run_stats['instrument_type'] = instrument_model
     if( instrument_model == 'HiSeq3000' ):
         run_stats['reverse_complement_i5'] = False
     elif( instrument_model == 'HiSeq4000' ):

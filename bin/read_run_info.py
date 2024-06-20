@@ -16,6 +16,10 @@ import sys
 import json
 import run_info
 
+# argument 1 is the path to the flowcell run directory. run_info.get_run_info() looks
+#            for the file 'runParameters.xml' in this directory.
+# argument 2 is the type of sequencing run: 'RNA-seq' or 'ATAC-seq'
+#
 if __name__ == '__main__':
     pathname = sys.argv[1]
     if(len(sys.argv) == 3):

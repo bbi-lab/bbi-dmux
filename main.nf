@@ -55,6 +55,7 @@ params.lig_barcode_file="default"
 params.generate_samplesheets = 'no_input'
 params.max_cores = 16
 params.max_wells_per_sample = 20
+params.hash_rt_split = false
 
 params.multi_exp = 0
 params.p5_cols = 0
@@ -136,6 +137,26 @@ process generate_sheets {
     """
 }
 
+// Generate an rt-split sample sheet
+
+process generate_rt_sheet {
+    
+    input:
+        val params.sample_sheet
+
+    output: 
+        file "*sheet.csv" into rt_samp_sheet
+
+    when:
+        params.hash_rt_split != false
+
+    """
+    # bash watch for errors
+    set -ueo pipefail
+    
+    awk -F',' -v OFS=',' 'NR==1 { print; next } {print \$1, \$2 "_" \$1, \$3}' ${params.sample_sheet} > "rt_sample_sheet.csv"
+    """
+}
 
 // check required options
 if (!params.run_dir || !params.output_dir || !params.sample_sheet ) {
@@ -146,12 +167,20 @@ if (!params.run_dir || !params.output_dir || !params.sample_sheet ) {
 //    exit 1, "Must include config file using -c CONFIG_FILE.config that includes p7_rows and p5_cols or p5_wells and p7_wells"
 //}
 
+// sample_sheet = params.hash_rt_split ? rt_samp_sheet : params.sample_sheet
+
+sample_sheet = params.sample_sheet
+if (params.hash_rt_split) {
+    sample_sheet = rt_samp_sheet
+}
+
 star_file = file(params.star_file)
 
 // check sample sheet
 process check_sample_sheet {
     input:
-	val params.sample_sheet
+	// val params.sample_sheet
+    val sample_sheet
     file star_file
 
     output:
@@ -162,8 +191,10 @@ process check_sample_sheet {
 
     """
     set -ueo pipefail
-
-    check_sample_sheet.py --sample_sheet $params.sample_sheet --star_file $star_file --level $params.level --rt_barcode_file $params.rt_barcode_file --max_wells_per_samp $params.max_wells_per_sample    
+#    check_sample_sheet.py --sample_sheet $params.sample_sheet --star_file $star_file --level $params.level --rt_barcode_file $params.rt_barcode_file --max_wells_per_samp $params.max_wells_per_sample    
+     check_sample_sheet.py --sample_sheet ${sample_sheet} --star_file $star_file --level $params.level --rt_barcode_file $params.rt_barcode_file --max_wells_per_samp $params.max_wells_per_sample    
+     echo "test"
+    
     """
 }
 
@@ -254,6 +285,10 @@ process seg_sample_fastqs {
         file "demux_out/*.fastq.gz" into samp_fastqs_check
         file "demux_out/*.stats.json" into json_stats mode flatten
         file "demux_out/*.csv" into csv_stats
+        set val(key), file("demux_out/*.fastq.gz") into merge_fastqs
+    
+    script: 
+        key = R2.baseName.split(/-L[0-9]{3}/)[0].split(/\.fq.part/)[0]
     
     """
     set -ueo pipefail
@@ -376,6 +411,46 @@ process sum_recovery {
 
 }
 
+
+// merge rt-split fastqs 
+
+rt_fastqs_in = samp_fastqs_check.flatten()
+    .map { fastq ->
+        def fname = fastq.getName()
+        def sample_name = fname.replaceAll(/\.P\d+\.[A-H]\d{2}|(\.fastq\.gz$)/, '') // strip off the “.P8.H09” (or .P5.G02, etc.) segment
+        tuple(sample_name, fastq)
+    }
+    .groupTuple()
+    .view()
+
+
+process merge_rt_fastqs {
+    cache "lenient"
+    publishDir path: "${params.output_dir}/demux_out/", pattern: "combined_fastqs/*", mode: 'link'     
+    
+    input: 
+        tuple val (sample_name), path(fastq) from rt_fastqs_in
+
+    output:
+        set val(sample_name), file("combined_fastqs/*") into rt_fastqs_out
+
+    when:
+        params.hash_rt_split != false
+
+    """
+    set -ueo pipefail
+
+    mkdir -p combined_fastqs
+    if [[ "${sample_name}" == "Undetermined"* ]]; then
+        echo "Undetermined fastqs not split" > combined_fastqs/output.log
+    else 
+        zcat ${fastq} > combined_fastqs/${sample_name}.fastq
+        pigz -p 8 combined_fastqs/*
+    fi
+
+    """
+
+}
 
 
 

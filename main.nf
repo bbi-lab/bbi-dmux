@@ -105,9 +105,10 @@ if (params.help) {
     log.info '    params.star_file = PATH/TO/FILE            File with the genome to star maps, similar to the one included with the package.'
     log.info '    params.bcl_max_mem = 40                    The maximum number of GB of RAM to assign for bcl2fastq'
     log.info '    params.max_wells_per_sample = 20           The maximum number of wells per sample - if a sample is in more wells, the fastqs will be split then reassembled.'
+    log.info '    params.hash_rt_split = false               Demultiplex samples at the rt level. Default is false.'              
     log.info '    --run_recovery true                        Add this to run the recovery script AFTER running the normal pipeline.'
     log.info '    --generate_samplesheets input_csv          Add this to generate the necessary samplesheet from the BBI universal input sheet.'    
-    log.info ''
+    log.info ''   
     log.info 'Leave issue reports at "https://github.com/bbi-lab/bbi-dmux/issues".'
     exit 1
 }
@@ -140,7 +141,7 @@ process generate_sheets {
 // Generate an rt-split sample sheet
 
 process generate_rt_sheet {
-    
+    publishDir path: "${params.output_dir}", pattern: "rt_sample_sheet.csv", mode: 'copy'
     input:
         val params.sample_sheet
 
@@ -154,6 +155,7 @@ process generate_rt_sheet {
     # bash watch for errors
     set -ueo pipefail
     
+    echo "test"
     awk -F',' -v OFS=',' 'NR==1 { print; next } {print \$1, \$2 "_" \$1, \$3}' ${params.sample_sheet} > "rt_sample_sheet.csv"
     """
 }
@@ -421,8 +423,6 @@ rt_fastqs_in = samp_fastqs_check.flatten()
         tuple(sample_name, fastq)
     }
     .groupTuple()
-    .view()
-
 
 process merge_rt_fastqs {
     cache "lenient"

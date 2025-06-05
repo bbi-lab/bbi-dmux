@@ -154,6 +154,7 @@ if __name__ == '__main__':
     parser.add_argument('--p5_barcode_file', required=True, help='Path to p5 barcode file, or "default".')
     parser.add_argument('--p7_barcode_file', required=True, help='Path to p7 barcode file, or "default".')
     parser.add_argument('--lig_barcode_file', required=True, help='Path to ligation barcode file, or "default".')
+    parser.add_argument('--megasci', required=False, default='false', help='Standard or Mega SCI. String of either "false" or "true". Default is "false".')
     args = parser.parse_args()
 
     p5_cols_used = args.p5_cols_used
@@ -249,8 +250,12 @@ if __name__ == '__main__':
     # Load and process ligation barcodes.
     if args.level == "3":
         ligation_lookup = bu.load_whitelist(ligfile, variable_lengths=True)
-        ligation_9_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 9}
-        ligation_10_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 10}
+        if(args.megasci == 'false'):
+          ligation_9_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 9}
+          ligation_10_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 10}
+        else:
+          ligation_9_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 10}
+          ligation_10_lookup = {barcode:well for barcode,well in ligation_lookup.items() if len(barcode) == 11}
 
     # If PCR indices, as well as RT barcodes, are used to identify
     # samples, set up now.
@@ -351,42 +356,84 @@ if __name__ == '__main__':
 
 
     if args.level == "3":
-        barcode_spec = {
-            'ligation_9': {
-                'start': 1,
-                'end': 9,
-                'read': 'r1',
-                'whitelist': ligation_9_lookup
-            },
-            'ligation_10': {
-                'start': 1,
-                'end': 10,
-                'read': 'r1',
-                'whitelist': ligation_10_lookup
-            },
-            'umi_9': {
-                'start': 16,
-                'end': 23,
-                'read': 'r1'
-            },
-            'umi_10': {
-                'start': 17,
-                'end': 24,
-                'read': 'r1'
-            },
-            'rt_9': {
-                'start': 24,
-                'end': 33,
-                'read': 'r1',
-                'whitelist': rtfile
-            },
-            'rt_10': {
-                'start': 25,
-                'end': 34,
-                'read': 'r1',
-                'whitelist': rtfile
-            }  
-        }
+        if args.megasci == 'false':
+            # Not MegaSCI ligation barcodes.
+            print('Standard SCI ligation barcodes.')
+            barcode_spec = {
+                'ligation_9': {
+                    'start': 1,
+                    'end': 9,
+                    'read': 'r1',
+                    'whitelist': ligation_9_lookup
+                },
+                'ligation_10': {
+                    'start': 1,
+                    'end': 10,
+                    'read': 'r1',
+                    'whitelist': ligation_10_lookup
+                },
+                'umi_9': {
+                    'start': 16,
+                    'end': 23,
+                    'read': 'r1'
+                },
+                'umi_10': {
+                    'start': 17,
+                    'end': 24,
+                    'read': 'r1'
+                },
+                'rt_9': {
+                    'start': 24,
+                    'end': 33,
+                    'read': 'r1',
+                    'whitelist': rtfile
+                },
+                'rt_10': {
+                    'start': 25,
+                    'end': 34,
+                    'read': 'r1',
+                    'whitelist': rtfile
+                }  
+            }
+        else:
+            # MegaSCI ligation barcodes.
+            print('Mega SCI ligation barcodes.')
+            barcode_spec = {
+                'ligation_9': {
+                    'start': 1,
+                    'end': 10,
+                    'read': 'r1',
+                    'whitelist': ligation_9_lookup
+                },
+                'ligation_10': {
+                    'start': 1,
+                    'end': 11,
+                    'read': 'r1',
+                    'whitelist': ligation_10_lookup
+                },
+                'umi_9': {
+                    'start': 17,
+                    'end': 24,
+                    'read': 'r1'
+                },
+                'umi_10': {
+                    'start': 18,
+                    'end': 25,
+                    'read': 'r1'
+                },
+                'rt_9': {
+                    'start': 25,
+                    'end': 34,
+                    'read': 'r1',
+                    'whitelist': rtfile
+                },
+                'rt_10': {
+                    'start': 26,
+                    'end': 35,
+                    'read': 'r1',
+                    'whitelist': rtfile
+                }
+            }
     else:
         barcode_spec = {
             'umi': {
@@ -402,7 +449,7 @@ if __name__ == '__main__':
             }  
         }
     barcode_spec.update(pcr_spec)
-    
+   
     # Set up output file names.
     lane_num = args.file_name
     lane_num = lane_num.replace("Undetermined_S0_L", "L")

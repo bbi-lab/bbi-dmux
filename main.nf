@@ -63,6 +63,7 @@ params.p7_rows = 0
 params.p5_wells = 0
 params.p7_wells = 0
 params.pcr_index_pair_file = 0
+params.megasci = 'false'
 
 
 //print usage
@@ -311,6 +312,7 @@ process seg_sample_fastqs {
         --p7_barcode_file $params.p7_barcode_file \
         --lig_barcode_file $params.lig_barcode_file \
         --multi_exp "$params.multi_exp" \
+        --megasci "$params.megasci" \
         --output_dir ./demux_out --level $params.level
 
     deactivate

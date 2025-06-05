@@ -68,7 +68,7 @@ from xml.etree.ElementTree import ElementTree, Element
 #      files.
 
 
-version = '20240530.1'
+version = '20241104.1'
 
 
 application_name_dict = {
@@ -494,7 +494,7 @@ def get_run_info_novaseqX( instrument_model, application_version, tree, pipeline
     if( pipeline_type == 'RNA-seq' ):
         run_stats['reverse_complement_i5'] = True
     elif( pipeline_type == 'ATAC-seq' ):
-        run_stats['reverse_complement_i5'] = False
+        run_stats['reverse_complement_i5'] = True
     else:
         raise ValueError('Unrecognized pipeline_type value \'%s\'' % ( pipeline_type ))
 

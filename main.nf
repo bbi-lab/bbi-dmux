@@ -421,7 +421,7 @@ process sum_recovery {
 rt_fastqs_in = samp_fastqs_check.flatten()
     .map { fastq ->
         def fname = fastq.getName()
-        def sample_name = fname.replaceAll(/\.P\d+\.[A-H]\d{2}|(\.fastq\.gz$)/, '') // strip off the “.P8.H09” (or .P5.G02, etc.) segment
+        def sample_name = fname.replaceAll(/\.P\d+\.[A-H]\d{1,2}|(\.fastq\.gz$)/, '') // strip off the “.P8.H09” (or .P5.G02, etc.) segment
         tuple(sample_name, fastq)
     }
     .groupTuple()

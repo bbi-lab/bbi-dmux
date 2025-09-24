@@ -150,7 +150,9 @@ process generate_sheets {
         file "*Sheet.csv"
         file "SampleMap.csv" optional true
         file "*_SampleIDMap.csv" optional true
-        file "SampleSheet.csv" into for_check_samplesheet
+        file "SampleSheet.csv" into for_check_samplesheet1
+        file "SampleSheet.csv" into for_check_samplesheet2
+        file "SampleSheet.csv" into for_generate_rt_sheet
 
     when:
         params.generate_samplesheets != false && params.lims_sample_sheet != false
@@ -165,10 +167,18 @@ process generate_sheets {
 
 // Generate an rt-split sample sheet
 
+sample_sheet1 = params.sample_sheet
+
+if (params.generate_samplesheets) {
+    sample_sheet1 = for_check_samplesheet1
+}
+
+sample_sheet2 = sample_sheet1
+
 process generate_rt_sheet {
     publishDir path: "${params.output_dir}", pattern: "rt_sample_sheet.csv", mode: 'copy'
     input:
-        val params.sample_sheet
+        val sample_sheet1
 
     output: 
         file "*sheet.csv" into rt_samp_sheet
@@ -198,13 +208,13 @@ if (!params.run_dir || !params.output_dir || !params.sample_sheet ) {
 
 // sample_sheet = params.sample_sheet
 
-sample_sheet = params.sample_sheet
+sample_sheet2 = params.sample_sheet
 if (params.hash_rt_split) {
-    sample_sheet = rt_samp_sheet
+    sample_sheet2 = rt_samp_sheet
 }
 
 if (params.generate_samplesheets) {
-    sample_sheet = for_check_samplesheet
+    sample_sheet2 = for_check_samplesheet2
 }
 
 star_file = file(params.star_file)
@@ -213,7 +223,7 @@ star_file = file(params.star_file)
 process check_sample_sheet {
     input:
 	// val params.sample_sheet
-    val sample_sheet
+    val sample_sheet2
     file star_file
 
     output:
@@ -230,7 +240,7 @@ process check_sample_sheet {
     """
     set -ueo pipefail
 #    check_sample_sheet.py --sample_sheet $params.sample_sheet --star_file $star_file --level $params.level --rt_barcode_file $params.rt_barcode_file --max_wells_per_samp $params.max_wells_per_sample    
-     check_sample_sheet.py --sample_sheet ${sample_sheet} --star_file $star_file --level $params.level --rt_barcode_file $params.rt_barcode_file --max_wells_per_samp $params.max_wells_per_sample    
+     check_sample_sheet.py --sample_sheet ${sample_sheet2} --star_file $star_file --level $params.level --rt_barcode_file $params.rt_barcode_file --max_wells_per_samp $params.max_wells_per_sample    
     
     """
 }

@@ -191,7 +191,7 @@ process generate_rt_sheet {
     set -ueo pipefail
     
     echo "test"
-    awk -F',' -v OFS=',' 'NR==1 { print; next } {print \$1, \$2 "_" \$1, \$3}' ${params.sample_sheet} > "rt_sample_sheet.csv"
+    awk -F',' -v OFS=',' 'NR==1 { print; next } tolower(\$2) ~ /keyhole/ {print; next} {print \$1, \$2 "_" \$1, \$3}' ${params.sample_sheet} > "rt_sample_sheet.csv"
     """
 }
 
@@ -213,9 +213,9 @@ if (params.hash_rt_split) {
     sample_sheet2 = rt_samp_sheet
 }
 
-if (params.generate_samplesheets) {
-    sample_sheet2 = for_check_samplesheet2
-}
+// if (params.generate_samplesheets) {
+//     sample_sheet2 = for_check_samplesheet2
+// }
 
 star_file = file(params.star_file)
 
